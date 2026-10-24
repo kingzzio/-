@@ -228,7 +228,7 @@ export default function planner(root, _p, query) {
       box.querySelector("#d-solve").onclick = () => {
         sessionStorage.setItem("brainboro:solve", JSON.stringify({ problem: `${t.title}${t.notes ? `\n${t.notes}` : ""}`, course: t.course }));
         closeSheet();
-        location.hash = "#/solve";
+        location.hash = "#/answer";
       };
       box.querySelector("#d-scan").onclick = () => {
         if (!isPremium()) return (closeSheet(), (location.hash = "#/premium"));

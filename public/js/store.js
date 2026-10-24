@@ -22,6 +22,8 @@ const fresh = () => ({
   planner: { items: [], feeds: [], connections: [], streak: { count: 0, last: "" }, lastSync: 0 },
   account: null,
   blitz: { best: 0 },
+  answers: [],
+  essay: null,
 });
 
 function load() {

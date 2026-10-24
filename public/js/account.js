@@ -2,7 +2,7 @@
 import { state, save, onChange } from "./store.js";
 import { post, toast, resetServerStatus } from "./ui.js";
 
-const SYNC_KEYS = ["profile", "xp", "streak", "goal", "cards", "topics", "mistakes", "badges", "tests", "daily", "stats", "planner"];
+const SYNC_KEYS = ["profile", "xp", "streak", "goal", "cards", "topics", "mistakes", "badges", "tests", "daily", "stats", "planner", "blitz", "answers", "essay"];
 let googleClientId = "";
 let syncTimer = null;
 let ready = null;

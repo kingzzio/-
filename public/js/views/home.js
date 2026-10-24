@@ -3,6 +3,7 @@ import { esc } from "../ui.js";
 import { icon } from "../icons.js";
 import { exams, getExam, getTopic, examTopicIds, subjects, topics } from "../content.js";
 import { user } from "../account.js";
+import { installCard, wireInstall } from "../install.js";
 
 const BORO_COLORS = { Manhattan: "#6d4aff", Brooklyn: "#ff4f8b", Queens: "#12a150", "The Bronx": "#ff8a00", "Staten Island": "#0ea5e9" };
 
@@ -58,10 +59,10 @@ export default function home(root) {
   </a>
 
   <nav class="quick" aria-label="Quick actions">
-    <a href="#/solve" style="--accent:linear-gradient(135deg,#6d4aff,#ff4f8b)"><span class="q-ic">${icon("camera", 26)}</span><span>Solve</span></a>
+    <a href="#/answer" style="--accent:linear-gradient(135deg,#6d4aff,#ff4f8b)"><span class="q-ic">${icon("camera", 26)}</span><span>Snap & Answer</span></a>
+    <a href="#/essay" style="--accent:#0ea5e9"><span class="q-ic">${icon("doc", 26)}</span><span>Essay Coach</span></a>
     <a href="#/cheats" style="--accent:#172043"><span class="q-ic">${icon("game", 26)}</span><span>Cheat Codes</span></a>
     <a href="#/battle" style="--accent:#ff4f8b"><span class="q-ic">${icon("sword", 26)}</span><span>Battle</span></a>
-    <a href="#/blitz" style="--accent:#ff8a00"><span class="q-ic">${icon("bolt", 26)}</span><span>Blitz</span></a>
   </nav>
 
   ${due ? `<a class="card banner" href="#/review"><span class="tile-ic" style="--accent:#12a150">🃏</span><span class="grow"><strong>${due} flashcard${due === 1 ? "" : "s"} ready to review</strong><small>Spaced repetition: review right before you'd forget</small></span><span class="chev">${icon("chevron")}</span></a>` : ""}
@@ -89,9 +90,11 @@ export default function home(root) {
     <div class="row-scroll">${exams.map((e) => `<a class="card exam-mini" style="--accent:${e.color}" href="#/exam/${e.id}"><span class="em">${e.emoji}</span><strong>${esc(e.name)}</strong></a>`).join("")}</div>
   </section>
 
+  ${installCard()}
   ${!u ? `<a class="card banner" href="#/login"><span class="tile-ic">${icon("user")}</span><span class="grow"><strong>Save your progress</strong><small>Make a free account with Google or email</small></span><span class="chev">${icon("chevron")}</span></a>` : ""}
-  ${isPremium() ? "" : `<a class="card banner premium-banner" href="#/premium"><span class="tile-ic" style="--accent:#ffb648">${icon("crown")}</span><span class="grow"><strong>Go Premium</strong><small>Solve any homework, every Cheat Code, 5× more Boro</small></span><span class="chev">${icon("chevron")}</span></a>`}`;
+  ${isPremium() ? "" : `<a class="card banner premium-banner" href="#/premium"><span class="tile-ic" style="--accent:#ffb648">${icon("crown")}</span><span class="grow"><strong>Go Premium</strong><small>Unlimited Snap & Answer, every Cheat Code, 5× more Boro</small></span><span class="chev">${icon("chevron")}</span></a>`}`;
 
+  wireInstall(root);
   // Borough Wars standings load in the background.
   fetch("api/leaderboard", { cache: "no-store" })
     .then((r) => (r.ok ? r.json() : null))

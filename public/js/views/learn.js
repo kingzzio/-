@@ -26,6 +26,8 @@ export default function learn(root) {
       <div class="list">
         <a class="row" href="#/curriculum"><span class="tile-ic" style="--accent:#0ea5e9">${icon("map")}</span><span class="grow"><strong>My class curriculum</strong><small>Eureka, Illustrative Math, Amplify, enVision… jump to your exact unit</small></span><span class="chev">${icon("chevron")}</span></a>
         <a class="row" href="#/resources"><span class="tile-ic" style="--accent:#12a150">${icon("folder")}</span><span class="grow"><strong>Free Resources</strong><small>Past Regents PDFs, official SHSAT & SAT practice</small></span><span class="chev">${icon("chevron")}</span></a>
+        <a class="row" href="#/essay"><span class="tile-ic" style="--accent:#0ea5e9">${icon("doc")}</span><span class="grow"><strong>Essay Coach</strong><small>Plan, write in your voice, get a rubric grade</small></span><span class="chev">${icon("chevron")}</span></a>
+        <a class="row" href="#/battle"><span class="tile-ic" style="--accent:#ff4f8b">${icon("sword")}</span><span class="grow"><strong>Brain Battle</strong><small>Same 10 questions as your friend. Who wins?</small></span><span class="chev">${icon("chevron")}</span></a>
         <a class="row" href="#/blitz"><span class="tile-ic" style="--accent:#ff8a00">${icon("bolt")}</span><span class="grow"><strong>Blitz</strong><small>60 seconds. How many can you get?</small></span><span class="chev">${icon("chevron")}</span></a>
         <a class="row" href="#/review"><span class="tile-ic" style="--accent:#ff4f8b">🃏</span><span class="grow"><strong>Flashcard review</strong><small>Cards you're about to forget</small></span><span class="chev">${icon("chevron")}</span></a>
       </div>

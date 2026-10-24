@@ -11,7 +11,8 @@ SHSAT · TACHS · Regents (Algebra I, Geometry, Algebra II, ELA, Biology, Earth 
 | 👤 **Accounts** | Sign up with email or **Continue with Google**. Progress syncs across devices. Guests can still use everything on one device. |
 | 🏫 **Connect your school** | Google Classroom (read-only Google sign-in), Canvas (address + access token), and Schoology / StudentVue / PowerSchool / Aeries / Infinite Campus via a calendar link. Imports assignments and **shows your grades**, with Sync now and Disconnect. |
 | 📅 **Planner** | Today view with To do / Done / Progress, steps, due times, priority, points, a focus timer and an "all done" streak. On every assignment: **Solve**, **Scan for more steps** (photo of the worksheet), **Break into steps**, and **Help me with this**. |
-| 📸 **Solve** | Snap or type any homework problem and get a step-by-step **animated whiteboard walkthrough**, plus a similar "your turn" problem that Boro checks. 3 free a day; unlimited with Premium. |
+| 📸 **Snap & Answer** | Gauth-style: photo of your homework → it finds every problem and gives the **answer + steps** for each, with **▶ Watch it** on the animated whiteboard, "Explain more" and "Practice this". Answers are saved in Recent. On Android you can share a photo straight to BrainBoro from the share sheet. 3 free a day; unlimited with Premium. |
+| ✍️ **Essay Coach** | **Plan** (what the prompt really asks, 3 thesis options, outline with sentence starters, evidence tips, counterclaim) → **Write** (your draft autosaves) → **Feedback** (Regents-style rubric scores, quoted fixes, grammar). |
 | 🕹️ **Cheat Codes** | 30-second whiteboard shortcut videos for test tricks, with captions and voiceover. 20 hand-made ones, plus an AI Cheat Code for any quiz question. |
 | 🎯 **Score Reveal** | Finish a full practice test and get an estimated SAT / SHSAT / Regents score card, which you can save as an image for your story. |
 | 🏆 **Borough Wars** | Weekly XP leaderboard: Manhattan vs Brooklyn vs Queens vs The Bronx vs Staten Island, plus the top students. |
@@ -25,6 +26,19 @@ SHSAT · TACHS · Regents (Algebra I, Geometry, Algebra II, ELA, Biology, Earth 
 | 🤖 **Boro AI tutor** | Hint / Explain / Quiz-me chat with homework photos. |
 | 👑 **Premium** | Unlimited Solve, every Cheat Code, Scan & Break into steps, and a 5× AI allowance. Sold with codes you create in the admin dashboard. |
 | 🛡️ **Admin dashboard** | User list and search, grant/remove Premium, disable accounts, generate Premium codes, stats. |
+
+## Is it an app? (free)
+
+Yes, as an installable web app (PWA). It costs nothing:
+
+- **iPhone:** open the site in Safari → Share ⬆️ → **Add to Home Screen**.
+- **Android:** Chrome menu ⋮ → **Install app** (or tap "Get the BrainBoro app" inside the app).
+
+It gets its own icon and opens full screen like any app. It works offline, launches instantly after the first visit, has home-screen shortcuts (Snap & Answer, Planner, Daily Blast, Ask Boro) and shows up in Android's share sheet.
+
+Putting it in the **App Store** costs $99/year (Apple developer account). **Google Play** is a one-time $25. If you ever want that, the same code can be wrapped with Capacitor; nothing needs to be rewritten. The web app + website path is completely free.
+
+**What does cost money:** hosting (Vercel), the database (Upstash) and Google sign-in are free. The **AI is not free**: Anthropic bills per use. Set `BRAINBORO_MODEL=claude-haiku-5-5` to make it very cheap, keep the free daily limits, and let Premium sales cover the bill. Without an API key, everything except the AI features still works.
 
 ## Run it locally
 
@@ -72,7 +86,8 @@ Create codes in **Admin → Premium codes** (each works once, for the days you p
 ```
 public/            the app (HTML/CSS + JS modules; `npm run build` bundles them into public/dist/)
   js/data/         study content: math, ela, science, history, exams, curricula, cheat codes, resources
-  js/views/        screens (home, learn, planner, connect, solve, blitz, leaderboard, admin, …)
+  js/views/        screens (home, learn, planner, connect, answer, essay, blitz, leaderboard, admin, …)
+  sw.js            offline cache, instant launch, Android share target
   js/schools.js    Google Classroom / Canvas / calendar import
   js/account.js    login state, Google button, progress sync
 lib/auth.js        passwords (scrypt), sessions, Google ID-token verification, admin rules
@@ -89,7 +104,7 @@ scripts/           build + checks
 
 ## Notes
 
-- **Read-only on purpose.** School connections can see assignments and grades but can't submit work or change anything. Solve teaches the method step by step and gives a "your turn" problem. For essays, it helps students plan instead of writing for them. That keeps students out of academic-integrity trouble and keeps the app allowed at schools.
+- **Read-only on purpose.** School connections can see assignments and grades but can't submit work. Snap & Answer shows the steps with every answer. Essay Coach plans, teaches and grades, but students write the essay themselves. There's no AI-detector "humanizer". That keeps students out of academic-integrity trouble and keeps the app allowed at schools.
 - **Curriculum PDFs are linked, not copied.** Eureka Math, OpenStax and OpenSciEd use non-commercial licenses, and a paid Premium tier would break them.
 - Leaderboard XP is earned on the device and capped per week, so treat it as a fun competition, not a contest with prizes.
 - Score Reveal numbers are rough estimates from practice tests, not official scores.

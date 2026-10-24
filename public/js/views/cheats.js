@@ -7,7 +7,7 @@ import { getTopic, getExam } from "../content.js";
 const isFree = (code) => cheatcodes.indexOf(code) > -1 && cheatcodes.indexOf(code) < FREE_CHEATS;
 
 // {a|b} → stacked fraction, [[x]] → circled, ~~x~~ → crossed out. Input is escaped first.
-function board(text) {
+export function board(text) {
   return esc(text)
     .replace(/\{([^|{}]+)\|([^{}]+)\}/g, '<span class="frac"><span>$1</span><span>$2</span></span>')
     .replace(/\[\[(.+?)\]\]/g, '<span class="circle">$1</span>')

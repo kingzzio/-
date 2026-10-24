@@ -6,7 +6,7 @@ import { user } from "../account.js";
 const premiumEnd = () => user()?.premiumUntil || state.premium.exp || 0;
 
 const PERKS = [
-  ["📸", "Unlimited Solve", "Snap any homework problem and get a step-by-step whiteboard walkthrough"],
+  ["📸", "Unlimited Snap & Answer", "Photo any homework: answers + step-by-step whiteboard walkthroughs, no daily limit"],
   ["🕹️", "Cheat Codes", "Every animated shortcut walkthrough, plus a Cheat Code for ANY question you miss"],
   ["🤖", "5× more Boro", "A much bigger hourly AI tutor allowance"],
   ["✨", "Unlimited AI quizzes", "Fresh questions on any topic, whenever you want"],

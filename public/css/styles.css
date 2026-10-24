@@ -538,3 +538,38 @@ details summary { cursor: pointer; font-weight: 650; margin: 6px 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- snap & answer ---------- */
+.snap { display: block; cursor: pointer; border-radius: 26px; padding: 3px; background: linear-gradient(135deg, var(--brand), var(--brand-2)); }
+.snap-inner { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 230px; padding: 24px 18px; border-radius: 23px; background: #120f22; color: #fff; text-align: center; overflow: hidden; }
+.snap-inner small { color: rgb(255 255 255 / 70%); max-width: 280px; }
+.snap-frame span { position: absolute; width: 34px; height: 34px; border: 3px solid rgb(255 255 255 / 85%); }
+.snap-frame span:nth-child(1) { top: 18px; left: 18px; border-right: 0; border-bottom: 0; border-radius: 12px 0 0 0; }
+.snap-frame span:nth-child(2) { top: 18px; right: 18px; border-left: 0; border-bottom: 0; border-radius: 0 12px 0 0; }
+.snap-frame span:nth-child(3) { bottom: 18px; left: 18px; border-right: 0; border-top: 0; border-radius: 0 0 0 12px; }
+.snap-frame span:nth-child(4) { bottom: 18px; right: 18px; border-left: 0; border-top: 0; border-radius: 0 0 12px 0; }
+.snap-btn { width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: var(--brand); box-shadow: 0 0 0 8px rgb(255 255 255 / 18%); margin-bottom: 6px; }
+.scan { position: relative; border-radius: 22px; overflow: hidden; background: #120f22; margin: 8px 0 14px; min-height: 160px; display: grid; place-items: center; }
+.scan img { width: 100%; max-height: 52dvh; object-fit: contain; display: block; }
+.scan-text { color: #fff; padding: 24px; font-size: 1.1rem; margin: 0; }
+.scan-line { position: absolute; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, #7cf, #fff, #7cf, transparent); box-shadow: 0 0 18px 6px rgb(120 200 255 / 45%); animation: scanmove 1.6s ease-in-out infinite alternate; }
+@keyframes scanmove { from { top: 4%; } to { top: 94%; } }
+.answer-photo { width: 100%; max-height: 220px; object-fit: contain; border-radius: 18px; background: #120f22; margin: 10px 0; }
+.answers { display: grid; gap: 12px; margin: 10px 0; }
+.answer-card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 16px; position: relative; overflow: hidden; }
+.answer-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--accent); }
+.answer-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.answer-q { font-weight: 600; margin: 0 0 10px; }
+.answer-a { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 16px; background: var(--good-bg); }
+.answer-a span { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--good); }
+.answer-a strong { font: 800 1.35rem/1.25 var(--display); overflow-wrap: anywhere; }
+.answer-steps { margin: 10px 0 0; }
+.answer-steps summary { display: flex; align-items: center; gap: 6px; color: var(--brand); list-style: none; }
+.answer-steps summary::-webkit-details-marker { display: none; }
+.answer-steps[open] summary .ic { transform: rotate(90deg); }
+.answer-steps ol { margin: 10px 0 0; padding-left: 1.3em; display: grid; gap: 10px; }
+.answer-steps li p { margin: 2px 0 0; color: var(--muted); font-size: .9rem; }
+.step-board { font: 1.25rem/1.3 "Caveat Brush", cursive; color: #2348d8; background: #f3f2ec; border-radius: 12px; padding: 6px 10px; display: inline-block; max-width: 100%; overflow-wrap: anywhere; }
+:root[data-theme="dark"] .step-board { color: #2348d8; }
+.install-card { background: linear-gradient(120deg, color-mix(in srgb, var(--brand) 12%, var(--card)), var(--card)); }
+.plan .card { margin-top: 10px; }

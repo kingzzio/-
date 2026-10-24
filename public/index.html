@@ -14,12 +14,16 @@
   <meta property="og:type" content="website">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="BrainBoro">
+  <meta name="mobile-web-app-capable" content="yes">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Inter:wght@400;500;600;700;800&family=Caveat+Brush&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=5ee8ac15f4">
-  <link rel="modulepreload" href="dist/app.js?v=5ee8ac15f4">
+  <!-- Fonts load without blocking the first paint; system fonts show until they arrive. -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Inter:wght@400;500;600;700;800&family=Caveat+Brush&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Inter:wght@400;500;600;700;800&family=Caveat+Brush&display=swap"></noscript>
+  <link rel="stylesheet" href="css/styles.css?v=84fb533b9b">
+  <link rel="modulepreload" href="dist/app.js?v=84fb533b9b">
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -31,6 +35,6 @@
   <nav class="tabs" id="tabs" aria-label="Main"></nav>
   <div id="toasts" class="toasts" aria-live="polite"></div>
   <noscript><p style="padding:2rem">BrainBoro needs JavaScript turned on.</p></noscript>
-  <script type="module" src="dist/app.js?v=5ee8ac15f4"></script>
+  <script type="module" src="dist/app.js?v=84fb533b9b"></script>
 </body>
 </html>
