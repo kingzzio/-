@@ -2,6 +2,10 @@
 
 **Free test prep, homework planner and AI tutor for NYC students** (and anyone in grades 6–12).
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fkingzzio%2F-&project-name=brainboro&repository-name=brainboro)
+
+👉 **New to this? Follow [SETUP.md](SETUP.md)**: about 15 minutes of clicking, $0, no coding.
+
 SHSAT · TACHS · Regents (Algebra I, Geometry, Algebra II, ELA, Biology, Earth & Space, Chemistry, Physics, Global, U.S. History) · SAT/PSAT · plus every grade 6–12 math, ELA, science and history topic.
 
 ## What's inside
@@ -57,7 +61,7 @@ Everything except AI and Google sign-in works with no setup. Accounts are saved 
 
 | Variable | What it's for |
 |---|---|
-| `SESSION_SECRET` | Long random string that signs logins. **Required.** (e.g. run `openssl rand -hex 32`) |
+| `SESSION_SECRET` | Optional. Signs logins. If you don't set it, one is generated and stored in the database. |
 | `ANTHROPIC_API_KEY` | Turns on Boro, Solve, Cheat Codes and AI quizzes. Get one at console.anthropic.com. |
 | `GOOGLE_CLIENT_ID` | Turns on "Continue with Google" and Google Classroom import (steps below). |
 | `ADMIN_EMAILS` | Admin accounts. Defaults to `esanni104@gmail.com`. |

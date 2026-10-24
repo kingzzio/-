@@ -1,7 +1,7 @@
 // Offline support + instant launches.
 // Versioned files (?v=…) are cache-first (they never change). The page itself is served from cache
 // immediately and refreshed in the background, so opening the app doesn't wait on the network.
-const CACHE = "brainboro-84fb533b9b";
+const CACHE = "brainboro-9ce6caee5a";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {

@@ -67,7 +67,12 @@ export async function aiCheat(q) {
 /** Plays a walkthrough in a full-screen overlay. Returns a cleanup function. */
 export function openCheat(code, { onClose } = {}) {
   let i = -1, playing = true, timer = null, closed = false;
-  let voice = localStorage.getItem("brainboro:voice") === "1";
+  let voice = false;
+  try {
+    voice = localStorage.getItem("brainboro:voice") === "1";
+  } catch {
+    /* storage blocked */
+  }
   const overlay = document.createElement("div");
   overlay.className = "cheat-overlay";
   overlay.setAttribute("role", "dialog");
@@ -191,7 +196,11 @@ export function openCheat(code, { onClose } = {}) {
   $("#stage").onclick = () => (i < code.steps.length - 1 ? show(i + 1) : finish());
   $("#voice").onclick = () => {
     voice = !voice;
-    localStorage.setItem("brainboro:voice", voice ? "1" : "0");
+    try {
+      localStorage.setItem("brainboro:voice", voice ? "1" : "0");
+    } catch {
+      /* storage blocked */
+    }
     $("#voice").textContent = voice ? "🔊" : "🔈";
     if (!voice && "speechSynthesis" in window) speechSynthesis.cancel();
   };

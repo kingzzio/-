@@ -25,7 +25,9 @@ assert.equal(logged.id, sneaky.id);
 await assert.rejects(auth.signup({ email: "bad", password: "password123" }), /real email/);
 await assert.rejects(auth.signup({ email: "a@b.co", password: "short" }), /8 characters/);
 
-// Sessions
+// Sessions (secret auto-generated + stored when SESSION_SECRET is unset)
+delete process.env.SESSION_SECRET;
+await auth.ensureSecret();
 const cookie = auth.sessionCookie(logged);
 assert.equal((await auth.currentUser(reqWith(cookie))).id, logged.id);
 const tampered = cookie.replace(/bb_session=([^.]+)/, "bb_session=someone-else");
