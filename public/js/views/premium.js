@@ -1,12 +1,16 @@
 // BrainBoro Premium: perks, purchase link and code redemption.
 import { state, save, isPremium } from "../store.js";
 import { esc, toast, confetti, post, serverStatus, resetServerStatus } from "../ui.js";
+import { user } from "../account.js";
+
+const premiumEnd = () => user()?.premiumUntil || state.premium.exp || 0;
 
 const PERKS = [
+  ["📸", "Unlimited Solve", "Snap any homework problem and get a step-by-step whiteboard walkthrough"],
   ["🕹️", "Cheat Codes", "Every animated shortcut walkthrough, plus a Cheat Code for ANY question you miss"],
   ["🤖", "5× more Boro", "A much bigger hourly AI tutor allowance"],
   ["✨", "Unlimited AI quizzes", "Fresh questions on any topic, whenever you want"],
-  ["📅", "Smart planner", "Auto-break assignments into steps"],
+  ["📅", "Smart planner", "Scan a worksheet or auto-break any assignment into steps"],
 ];
 
 export default function premium(root, _p, query) {
@@ -16,7 +20,7 @@ export default function premium(root, _p, query) {
     <section class="premium-hero">
       <div class="big-emoji">👑</div>
       <h1>BrainBoro Premium</h1>
-      <p class="lead">${active ? `You're Premium until ${new Date(state.premium.exp).toLocaleDateString()}. Go get those scores.` : "Unlock the shortcuts top scorers use."}</p>
+      <p class="lead">${user()?.admin ? "You're the admin. Every feature is unlocked." : active ? `You're Premium${premiumEnd() ? ` until ${new Date(premiumEnd()).toLocaleDateString()}` : ""}. Go get those scores.` : "Unlock the shortcuts top scorers use."}</p>
     </section>
     <div class="perks">${PERKS.map(([e, t, d]) => `<div class="perk"><span class="em">${e}</span><span><strong>${t}</strong><small>${d}</small></span></div>`).join("")}</div>
     <div id="buy"></div>
@@ -37,8 +41,14 @@ export default function premium(root, _p, query) {
     const code = root.querySelector("#code").value.trim();
     if (!code) return;
     try {
-      const data = await (await post("api/premium", { code })).json();
-      state.premium = { token: data.token, exp: data.exp };
+      if (user()) {
+        // Logged in: the code goes on your account, so Premium follows you to every device.
+        const data = await (await post("api/me", { action: "redeem", code })).json();
+        state.account = { user: data.user };
+      } else {
+        const data = await (await post("api/premium", { code })).json();
+        state.premium = { token: data.token, exp: data.exp };
+      }
       save();
       resetServerStatus();
       confetti();

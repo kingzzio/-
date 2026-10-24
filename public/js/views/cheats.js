@@ -76,7 +76,7 @@ export function openCheat(code, { onClose } = {}) {
     <div class="cheat-board">
       <div class="cheat-top"><span class="cheat-tag">🕹️ ${esc(code.trick)}</span><button class="icon-btn" id="cx" aria-label="Close">✕</button></div>
       <div class="cheat-progress">${code.steps.map(() => "<span></span>").join("")}</div>
-      <p class="cheat-question">${esc(code.q)}</p>
+      <p class="cheat-question">${esc(code.q)}${code.image ? `<img src="${code.image}" alt="Your problem">` : ""}</p>
       <div class="cheat-stage" id="stage" aria-live="polite"></div>
       <div class="cheat-caption" id="cap"></div>
       <ol class="cheat-choices" id="choices" type="A">${code.choices.map((c) => `<li>${esc(c)}</li>`).join("")}</ol>
@@ -132,11 +132,18 @@ export function openCheat(code, { onClose } = {}) {
     $(".cheat-board").classList.add("ended");
     $("#end").classList.remove("hidden");
     $("#end").innerHTML = `
-      <p><strong>✅ Answer: ${esc(code.choices[code.a])}</strong></p>
+      <p><strong>✅ Answer: ${esc(code.answer ?? code.choices[code.a] ?? "")}</strong></p>
+      ${code.tryNext ? `<p class="small" style="margin-top:8px">🎯 <strong>Your turn:</strong> ${esc(code.tryNext)}</p>` : ""}
       <div class="btn-row wrap">
         ${topic ? `<a class="btn" href="#/${topic.gen?.length ? "practice" : "quiz"}/${topic.id}" data-close>Try one yourself →</a>` : ""}
+        ${code.tryNext ? `<button class="btn" id="check">🤖 Check my answer</button>` : ""}
         ${code.id ? `<button class="btn ghost" id="sh">📣 Share</button>` : ""}
       </div>`;
+    $("#check")?.addEventListener("click", () => {
+      sessionStorage.setItem("brainboro:ask", JSON.stringify({ mode: "hint", text: `I just learned how to solve: ${code.q}\nNow I'm trying this one: ${code.tryNext}\nMy answer is: ` }));
+      close(false);
+      location.hash = "#/tutor";
+    });
     $("#sh")?.addEventListener("click", () => share({ title: `BrainBoro Cheat Code: ${code.trick}`, text: `This ${code.trick} trick is crazy 🤯🕹️`, url: `${baseUrl()}#/cheat/${code.id}?shared=1` }));
     overlay.querySelectorAll("[data-close]").forEach((a) => a.addEventListener("click", () => close(false)));
   };

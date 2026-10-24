@@ -19,7 +19,9 @@ const fresh = () => ({
   stats: { answered: 0, correct: 0, cardsReviewed: 0, aiChats: 0, battles: 0, perfect: 0, cheatCodes: 0, tasksDone: 0 },
   theme: "",
   premium: { token: "", exp: 0 },
-  planner: { items: [], feeds: [], streak: { count: 0, last: "" }, lastSync: 0 },
+  planner: { items: [], feeds: [], connections: [], streak: { count: 0, last: "" }, lastSync: 0 },
+  account: null,
+  blitz: { best: 0 },
 });
 
 function load() {
@@ -37,6 +39,7 @@ function load() {
       streak: { ...base.streak, ...data.streak },
       premium: { ...base.premium, ...data.premium },
       planner: { ...base.planner, ...data.planner },
+      blitz: { ...base.blitz, ...data.blitz },
     };
   } catch {
     return fresh();
@@ -45,13 +48,14 @@ function load() {
 
 export const state = load();
 
-export function save() {
+/** Persists state. `quiet` skips the account sync (used by the sync itself). */
+export function save(quiet = false) {
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch {
     /* storage full or blocked — progress just won't persist */
   }
-  listeners.forEach((fn) => fn(state));
+  listeners.forEach((fn) => fn(state, quiet));
 }
 
 export const onChange = (fn) => listeners.add(fn);
@@ -61,7 +65,7 @@ export function resetAll() {
   save();
 }
 
-export const isPremium = () => Boolean(state.premium.token) && state.premium.exp > Date.now();
+export const isPremium = () => Boolean(state.account?.user?.premium) || (Boolean(state.premium.token) && state.premium.exp > Date.now());
 
 export const level = (xp = state.xp) => Math.floor(Math.sqrt(xp / 40)) + 1;
 export const levelFloor = (lv) => (lv - 1) ** 2 * 40;

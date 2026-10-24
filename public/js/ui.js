@@ -40,20 +40,19 @@ export function md(text) {
   return html;
 }
 
-export function toast(message, { emoji = "✨", ms = 2600 } = {}) {
+export function toast(message, { emoji = "✨", ms = 2200 } = {}) {
   const box = document.getElementById("toasts");
   const el = document.createElement("div");
   el.className = "toast";
   el.innerHTML = `<span>${esc(emoji)}</span><span>${esc(message)}</span>`;
   box.appendChild(el);
-  while (box.children.length > 3) box.firstElementChild.remove();
+  while (box.children.length > 2) box.firstElementChild.remove();
   setTimeout(() => el.classList.add("out"), ms);
   setTimeout(() => el.remove(), ms + 400);
 }
 
 export function celebrateBadges(badges) {
-  badges.forEach((b, i) => setTimeout(() => toast(`Badge unlocked: ${b.name}`, { emoji: b.emoji, ms: 3500 }), i * 700));
-  if (badges.length) confetti();
+  badges.forEach((b, i) => setTimeout(() => toast(`Badge unlocked: ${b.name}`, { emoji: b.emoji, ms: 3000 }), i * 900));
 }
 
 export function confetti(count = 120) {

@@ -4,6 +4,7 @@ import { exams, getExam, getTopic, buildQuiz, examTopicIds } from "../content.js
 import { runQuiz } from "./study.js";
 import { topicRow } from "./home.js";
 import { resourceCard } from "./resources.js";
+import { revealHtml, shareScore } from "../score.js";
 import { resourcesFor } from "../data/resources.js";
 
 const groups = [
@@ -123,9 +124,10 @@ export function testRoute(root, { id }, query) {
           by.set(a.q.topicId, t);
         }
         const weak = [...by].filter(([, v]) => v.ok < v.n).sort((a, b) => a[1].ok / a[1].n - b[1].ok / b[1].n).slice(0, 4);
-        extra.innerHTML = weak.length
-          ? `<div class="card"><h3>Study these next</h3><div class="list">${weak.map(([tid, v]) => { const t = getTopic(tid); return t ? `<a class="row" href="#/topic/${t.id}"><span class="grow"><strong>${esc(t.name)}</strong><small>${v.ok}/${v.n} correct</small></span><span class="chev">›</span></a>` : ""; }).join("")}</div></div>`
-          : "";
+        extra.innerHTML = (section ? "" : revealHtml(e, r.correct / r.total)) + (weak.length
+          ? `<div class="card" style="margin-top:12px;text-align:left"><h3>Study these next</h3><div class="list">${weak.map(([tid, v]) => { const t = getTopic(tid); return t ? `<a class="row" href="#/topic/${t.id}"><span class="grow"><strong>${esc(t.name)}</strong><small>${v.ok}/${v.n} correct</small></span><span class="chev">›</span></a>` : ""; }).join("")}</div></div>`
+          : "");
+        extra.querySelector("#share-score")?.addEventListener("click", () => shareScore(e, r.correct / r.total, state.profile.name));
       },
     });
   };

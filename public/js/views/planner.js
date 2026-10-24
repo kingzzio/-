@@ -1,7 +1,9 @@
 // Homework planner: day view, assignments with steps, focus timer, all-done streak,
 // and import from a school calendar feed (Canvas, Schoology, Google Classroom).
 import { state, save, addXp, todayKey, isPremium } from "../store.js";
-import { esc, toast, confetti, celebrateBadges, post, aiAvailable } from "../ui.js";
+import { esc, toast, confetti, celebrateBadges, post, aiAvailable, readImage } from "../ui.js";
+import { icon } from "../icons.js";
+import { connectSchool, syncQuiet } from "../schools.js";
 
 const P = () => state.planner;
 const DAY = 86400000;
@@ -46,13 +48,13 @@ export default function planner(root, _p, query) {
     root.innerHTML = `
       <div class="plan-head">
         <div class="grow"><h1>${esc(label(day))}</h1><p class="muted small">${items.length ? `${items.length - done} to do · ${done} done` : "Nothing due"}</p></div>
-        <button class="icon-btn" id="sync" title="Sync calendar">🔄</button>
-        <button class="btn small" id="add">＋ Add</button>
+        <button class="icon-btn filled" id="sync" title="Sync" aria-label="Sync">${icon("sync", 20)}</button>
+        <button class="icon-btn filled" id="add" aria-label="Add assignment">${icon("plus", 20)}</button>
       </div>
       <div class="plan-nav">
-        <button class="icon-btn" id="prev" aria-label="Previous day">‹</button>
+        <button class="icon-btn filled" id="prev" aria-label="Previous day">${icon("back", 18)}</button>
         ${day !== today ? `<button class="chip" id="today">↩ Back to Today</button>` : `<span class="muted small">${new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}</span>`}
-        <button class="icon-btn" id="next" aria-label="Next day">›</button>
+        <button class="icon-btn filled" id="next" aria-label="Next day">${icon("chevron", 18)}</button>
       </div>
       ${P().streak.count && P().streak.last >= todayKey(new Date(Date.now() - DAY)) ? `<p class="center"><span class="tag">🔥 ${P().streak.count}-day on-time streak</span></p>` : ""}
       <div class="list" id="items">${
@@ -62,21 +64,7 @@ export default function planner(root, _p, query) {
       }</div>
       ${items.length && done === items.length ? `<div class="card all-done"><div class="big-emoji">🎉</div><h2>All assignments done!</h2><p>Good work today.</p></div>` : ""}
       ${day === today && upcoming.length ? `<section class="section"><div class="section-head"><h2>Look ahead</h2></div><div class="list">${upcoming.map(itemRow).join("")}</div></section>` : ""}
-      <section class="section">
-        <div class="section-head"><h2>Connect your classes</h2></div>
-        <div class="card">
-          <p class="small">Paste your <strong>calendar feed link</strong> to import assignments automatically. It's read-only, and your password is never needed.</p>
-          <details class="small"><summary>Where do I find it?</summary>
-            <ul class="bullets">
-              <li><strong>Canvas:</strong> Calendar → bottom right → <em>Calendar Feed</em> → copy the link.</li>
-              <li><strong>Schoology:</strong> Calendar → <em>Export</em> → copy the iCal link.</li>
-              <li><strong>Google Classroom:</strong> Google Calendar → Settings → your class calendar → <em>Secret address in iCal format</em>.</li>
-            </ul>
-          </details>
-          <div class="composer-row"><input id="feed" placeholder="https://… or webcal://…" aria-label="Calendar feed URL"><button class="btn small" id="connect">Connect</button></div>
-          ${P().feeds.length ? `<p class="tiny muted">${P().feeds.length} calendar${P().feeds.length === 1 ? "" : "s"} connected${P().lastSync ? ` · last synced ${new Date(P().lastSync).toLocaleString()}` : ""} · <button class="link tiny" id="disconnect">Disconnect</button></p>` : ""}
-        </div>
-      </section>
+      ${(P().connections || []).length ? `<a class="card banner" href="#/connect"><span class="tile-ic">${icon("link")}</span><span class="grow"><strong>${P().connections.map((c) => esc(c.label)).join(" · ")}</strong><small>Connected · see grades & sync</small></span><span class="ok-pill">${icon("check", 14)} Synced</span></a>` : `<a class="card import-cta" href="#/connect"><span class="tile-ic">${icon("learn")}</span><span class="grow"><strong>Import from your school</strong><small>Google Classroom, Canvas, Schoology & more: bring your assignments in automatically</small></span><span class="chev">${icon("chevron")}</span></a>`}
       <section class="section"><div class="grid-2">
         <button class="card tile" id="focus"><div class="tile-emoji">⏱️</div><h3>Start a timer</h3><p>25 minutes of focus</p></button>
         <a class="card tile" href="#/tutor"><div class="tile-emoji">🤖</div><h3>Stuck?</h3><p>Ask Boro for help</p></a>
@@ -93,19 +81,6 @@ export default function planner(root, _p, query) {
     root.querySelector("#add2")?.addEventListener("click", () => editor(null));
     root.querySelector("#sync").onclick = () => sync(true);
     root.querySelector("#focus").onclick = () => focusTimer(null);
-    root.querySelector("#connect").onclick = async () => {
-      const url = root.querySelector("#feed").value.trim();
-      if (!url) return;
-      if (!P().feeds.includes(url)) P().feeds.push(url);
-      save();
-      await sync(true);
-    };
-    root.querySelector("#disconnect")?.addEventListener("click", () => {
-      if (!confirm("Disconnect your calendars? Imported assignments stay.")) return;
-      P().feeds = [];
-      save();
-      draw();
-    });
     root.querySelectorAll("[data-check]").forEach((b) => (b.onclick = (e) => (e.stopPropagation(), toggleDone(b.dataset.check))));
     root.querySelectorAll("[data-open]").forEach((b) => {
       b.onclick = () => detail(b.dataset.open);
@@ -133,32 +108,20 @@ export default function planner(root, _p, query) {
   };
 
   const sync = async (loud) => {
-    if (!P().feeds.length) return loud && toast("Connect a calendar first ↓", { emoji: "📅" });
+    migrateFeeds();
+    const conns = P().connections || [];
+    if (!conns.length) return loud && (location.hash = "#/connect");
+    if (loud) toast("Syncing…", { emoji: "🔄" });
     let added = 0;
-    for (const url of P().feeds) {
+    for (const c of conns) {
+      if (c.type === "classroom" && !loud) continue; // needs a Google popup
       try {
-        const { events } = await (await post("api/calendar", { url })).json();
-        for (const ev of events) {
-          const key = `feed:${ev.uid || `${ev.title}|${ev.due}`}`;
-          const existing = P().items.find((t) => t.key === key);
-          if (existing) {
-            existing.due = ev.due;
-            existing.title = ev.title;
-            continue;
-          }
-          // Skip stuff that was due more than two weeks ago.
-          if (new Date(ev.due).getTime() < Date.now() - 14 * DAY) continue;
-          P().items.push({ id: uid(), key, title: ev.title, course: ev.course || "", due: ev.due, type: guessType(ev.title), priority: "Medium", points: "", steps: [], notes: ev.notes || "", url: ev.url || "", done: false, source: "calendar" });
-          added++;
-        }
+        added += (await connectSchool(c.type, c)).added;
       } catch (err) {
-        if (loud) toast(err.status === 404 ? "Calendar import needs the BrainBoro server (not available on this site)." : err.message, { emoji: "⚠️" });
-        return;
+        if (loud) toast(`${c.label}: ${err.message}`, { emoji: "⚠️" });
       }
     }
-    P().lastSync = Date.now();
-    save();
-    if (loud) toast(added ? `${added} assignment${added === 1 ? "" : "s"} imported` : "You're up to date", { emoji: "✅" });
+    if (loud) toast(added ? `${added} new assignment${added === 1 ? "" : "s"}` : "You're up to date", { emoji: "✅" });
     draw();
   };
 
@@ -224,8 +187,12 @@ export default function planner(root, _p, query) {
         <div class="steps">${t.steps.map((s, n) => `<div class="step ${s.done ? "done" : ""}"><button class="check ${s.done ? "on" : ""}" data-step="${n}" aria-label="Toggle step">${s.done ? "✓" : ""}</button><span class="grow">${esc(s.t)}</span><button class="icon-btn sm" data-rm="${n}" aria-label="Remove step">✕</button></div>`).join("")}
           <div class="step add"><span class="muted">＋</span><input id="d-step" maxlength="80" placeholder="Add a step…" aria-label="Add a step"></div>
         </div>
+        <div class="pill-btns">
+          <button class="pill-btn" id="d-scan">${icon("camera", 16)} Scan for more steps</button>
+          <button class="pill-btn" id="d-ai">${icon("spark", 16)} Break into steps</button>
+          <button class="pill-btn solid" id="d-solve">${icon("spark", 16)} Solve</button>
+        </div>
         <div class="btn-row wrap">
-          <button class="btn ghost small" id="d-ai">✨ Break into steps</button>
           <button class="btn ghost small" id="d-help">🤖 Help me with this</button>
           <button class="btn ghost small" id="d-timer">⏱️ Focus timer</button>
         </div>
@@ -257,6 +224,24 @@ export default function planner(root, _p, query) {
           toast(err.message, { emoji: "⚠️" });
           box.querySelector("#d-ai").disabled = false;
         }
+      };
+      box.querySelector("#d-solve").onclick = () => {
+        sessionStorage.setItem("brainboro:solve", JSON.stringify({ problem: `${t.title}${t.notes ? `\n${t.notes}` : ""}`, course: t.course }));
+        closeSheet();
+        location.hash = "#/solve";
+      };
+      box.querySelector("#d-scan").onclick = () => {
+        if (!isPremium()) return (closeSheet(), (location.hash = "#/premium"));
+        pickPhoto(async (image) => {
+          try {
+            toast("Reading your worksheet…", { emoji: "📸" });
+            const { steps } = await (await post("api/steps", { title: t.title, course: t.course, notes: t.notes, image })).json();
+            t.steps.push(...steps.map((x) => ({ t: x, done: false })));
+            rerender();
+          } catch (err) {
+            toast(err.message, { emoji: "⚠️" });
+          }
+        });
       };
       box.querySelector("#d-help").onclick = () => {
         sessionStorage.setItem("brainboro:ask", JSON.stringify({ mode: "hint", assignment: `${t.title}${t.course ? ` (${t.course})` : ""}`, text: `I'm working on "${t.title}"${t.course ? ` for ${t.course}` : ""}.${t.notes ? ` Details: ${t.notes}` : ""} Can you help me get started? I want to understand how to do it myself.` }));
@@ -306,7 +291,8 @@ export default function planner(root, _p, query) {
 
   draw();
   // Refresh imported assignments at most every 30 minutes.
-  if (P().feeds.length && Date.now() - P().lastSync > 30 * 60000) sync(false);
+  migrateFeeds();
+  syncQuiet().then((n) => n && draw());
   return () => {
     cleanupTimer?.();
     document.querySelector(".sheet-wrap")?.remove();
@@ -324,15 +310,20 @@ function itemRow(t) {
   </div>`;
 }
 
-function guessType(title) {
-  const s = title.toLowerCase();
-  if (/\b(test|exam|midterm|final)\b/.test(s)) return "Test";
-  if (/\bquiz\b/.test(s)) return "Quiz";
-  if (/\blab\b/.test(s)) return "Lab";
-  if (/\b(essay|paragraph|draft|paper)\b/.test(s)) return "Essay";
-  if (/\b(read|chapter)\b/.test(s)) return "Reading";
-  if (/\bproject\b/.test(s)) return "Project";
-  return "Homework";
+// Older versions stored bare calendar links; turn them into connections.
+function migrateFeeds() {
+  const P0 = state.planner;
+  if (!P0.feeds?.length) return;
+  P0.connections ||= [];
+  for (const url of P0.feeds) if (!P0.connections.some((c) => c.url === url)) P0.connections.push({ id: `calendar:${url}`, type: "calendar", label: "Calendar link", url, lastSync: 0 });
+  P0.feeds = [];
+  save();
+}
+
+function pickPhoto(cb) {
+  const input = Object.assign(document.createElement("input"), { type: "file", accept: "image/*", capture: "environment" });
+  input.onchange = async () => input.files[0] && cb(await readImage(input.files[0]).catch(() => null));
+  input.click();
 }
 
 // Bottom sheet. `setup(box, close)` wires it up; it may return a cleanup function.

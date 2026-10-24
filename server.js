@@ -4,7 +4,7 @@ import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
-import { calendarHandler, cheatcodeHandler, premiumHandler, quizHandler, statusHandler, stepsHandler, tutorHandler } from "./lib/handlers.js";
+import * as h from "./lib/handlers.js";
 
 const root = join(fileURLToPath(new URL(".", import.meta.url)), "public");
 const port = Number(process.env.PORT || 3000);
@@ -18,15 +18,9 @@ const types = {
   ".png": "image/png",
   ".ico": "image/x-icon",
 };
-const routes = {
-  "/api/tutor": tutorHandler,
-  "/api/quiz": quizHandler,
-  "/api/status": statusHandler,
-  "/api/cheatcode": cheatcodeHandler,
-  "/api/steps": stepsHandler,
-  "/api/calendar": calendarHandler,
-  "/api/premium": premiumHandler,
-};
+const routes = Object.fromEntries(
+  ["tutor", "quiz", "status", "cheatcode", "solve", "steps", "calendar", "canvas", "premium", "auth", "me", "admin", "leaderboard"].map((n) => [`/api/${n}`, h[`${n}Handler`]]),
+);
 
 createServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost");

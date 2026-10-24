@@ -1,113 +1,117 @@
-import { state, levelProgress, levelName, xpToday, dueCount, todayKey, streakAlive, mastery, isPremium } from "../store.js";
+import { state, levelProgress, levelName, xpToday, dueCount, todayKey, mastery, isPremium } from "../store.js";
 import { esc } from "../ui.js";
+import { icon } from "../icons.js";
 import { exams, getExam, getTopic, examTopicIds, subjects, topics } from "../content.js";
+import { user } from "../account.js";
 
-const greetings = ["Let's get that brain buzzing", "Small steps, big scores", "Future Stuy kid? Let's see", "Your streak misses you", "Time to level up"];
+const BORO_COLORS = { Manhattan: "#6d4aff", Brooklyn: "#ff4f8b", Queens: "#12a150", "The Bronx": "#ff8a00", "Staten Island": "#0ea5e9" };
+
+function greeting() {
+  const h = new Date().getHours();
+  return h < 5 ? "Up late" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+}
 
 export default function home(root) {
   const p = state.profile;
+  const u = user();
   const lp = levelProgress();
   const goalPct = Math.min(100, Math.round((xpToday() / state.goal.daily) * 100));
   const exam = getExam(p.exam);
   const daily = state.daily[todayKey()];
   const due = dueCount();
-  const dueToday = state.planner.items.filter((t) => !t.done && todayKey(new Date(t.due)) === todayKey()).length;
+  const today = todayKey();
+  const tasks = (state.planner.items || []).filter((t) => todayKey(new Date(t.due)) === today);
+  const done = tasks.filter((t) => t.done).length;
   const recent = Object.entries(state.topics)
     .sort((a, b) => b[1].last - a[1].last)
     .slice(0, 3)
     .map(([id]) => getTopic(id))
     .filter(Boolean);
-  // Weakest topics for your exam = what to study next.
+  // Weakest topics for your test = what to study next.
   const focus = exam
-    ? examTopicIds(exam)
-        .map(getTopic)
-        .filter(Boolean)
-        .sort((a, b) => (mastery(a.id) ?? -1) - (mastery(b.id) ?? -1))
-        .slice(0, 4)
-    : topics.filter((t) => t.grades.includes(Number(p.grade))).slice(0, 4);
+    ? examTopicIds(exam).map(getTopic).filter(Boolean).sort((a, b) => (mastery(a.id) ?? -1) - (mastery(b.id) ?? -1)).slice(0, 5)
+    : topics.filter((t) => t.grades.includes(Number(p.grade))).slice(0, 5);
 
   root.innerHTML = `
-  <section class="hero">
-    <div class="hero-top">
-      <div class="avatar-lg">${esc(p.avatar)}</div>
-      <div>
-        <p class="muted small">${esc(greetings[new Date().getDate() % greetings.length])}</p>
-        <h1>Hey ${esc(p.name || "there")}!</h1>
-      </div>
+  <div class="hello">
+    <div class="avatar-lg">${u?.picture ? `<img src="${esc(u.picture)}" alt="" referrerpolicy="no-referrer">` : esc(p.avatar)}</div>
+    <div class="grow"><p class="muted small">${greeting()} 👋</p><h1>${esc(p.name || u?.name || "Hey there")}</h1></div>
+  </div>
+
+  <a class="card" href="#/planner">
+    <div class="today-head"><strong>Today</strong><span class="small muted">${tasks.length ? `${tasks.length - done} left` : "Nothing due"}</span></div>
+    <div class="today">
+      <div class="today-cell"><div class="v">${tasks.length - done}</div><div class="l">To do</div></div>
+      <div class="today-cell"><div class="v">${done}</div><div class="l">Done</div></div>
+      <div class="today-cell"><div class="v">${tasks.length ? `${Math.round((done / tasks.length) * 100)}%` : "—"}</div><div class="l">Progress</div></div>
     </div>
-    <div class="stat-row">
-      <div class="stat"><div class="stat-v"><span class="${streakAlive() && state.streak.count ? "flame" : "flame off"}">🔥</span> ${streakAlive() ? state.streak.count : 0}</div><div class="stat-l">day streak</div></div>
-      <div class="stat"><div class="stat-v">⚡ ${lp.lv}</div><div class="stat-l">${esc(levelName(lp.lv))}</div></div>
-      <div class="stat"><div class="stat-v">💎 ${state.xp}</div><div class="stat-l">total XP</div></div>
-    </div>
-    <div class="goal">
-      <div class="goal-label"><span>Daily goal</span><span>${xpToday()} / ${state.goal.daily} XP</span></div>
-      <div class="bar"><div class="bar-fill" style="width:${goalPct}%"></div></div>
-    </div>
-  </section>
+    <div class="goal"><div class="goal-label"><span>Daily goal · Lv ${lp.lv} ${esc(levelName(lp.lv))}</span><span>${xpToday()} / ${state.goal.daily} XP</span></div><div class="bar"><div class="bar-fill" style="width:${goalPct}%"></div></div></div>
+  </a>
 
   <a class="card daily ${daily ? "done" : ""}" href="#/daily">
     <div class="daily-emoji">${daily ? "✅" : "⚡"}</div>
     <div class="grow">
       <h2>Daily Brain Blast</h2>
-      <p>${daily ? `You scored ${daily.score}/5 today. Come back tomorrow — or challenge a friend!` : `5 questions • same for everyone today${exam ? ` • ${esc(exam.name)}` : ""} • +50 XP`}</p>
+      <p>${daily ? `You got ${daily.score}/5. Send it to a friend 👀` : `5 questions · same for everyone today${exam ? ` · ${esc(exam.name)}` : ""} · +50 XP`}</p>
     </div>
-    <span class="chev">›</span>
+    <span class="chev">${icon("chevron")}</span>
   </a>
 
-  <div class="grid-2">
-    <a class="card tile" href="#/review"><div class="tile-emoji">🃏</div><h3>Review cards</h3><p>${due ? `${due} card${due === 1 ? "" : "s"} due` : "All caught up!"}</p></a>
-    <a class="card tile" href="#/battle"><div class="tile-emoji">🥊</div><h3>Brain Battle</h3><p>Challenge a friend</p></a>
-    <a class="card tile" href="#/cheats"><div class="tile-emoji">🕹️</div><h3>Cheat Codes</h3><p>30-sec test shortcuts</p></a>
-    <a class="card tile" href="#/planner"><div class="tile-emoji">📅</div><h3>Planner</h3><p>${dueToday ? `${dueToday} due today` : "Never be late again"}</p></a>
-    <a class="card tile" href="#/tutor"><div class="tile-emoji">🤖</div><h3>Ask Boro</h3><p>AI homework help</p></a>
-    <a class="card tile" href="#/curriculum"><div class="tile-emoji">🗺️</div><h3>My curriculum</h3><p>Find your class units</p></a>
-  </div>
-  <a class="card banner" href="#/resources"><span class="em">📂</span><span class="grow"><strong>Free Resources</strong><small>Past Regents PDFs, official SHSAT & SAT practice, free curriculum downloads</small></span><span class="chev">›</span></a>
-  ${isPremium() ? "" : `<a class="card banner premium-banner" href="#/premium"><span class="em">👑</span><span class="grow"><strong>Go Premium</strong><small>Every Cheat Code, 5× more Boro, smart planner</small></span><span class="chev">›</span></a>`}
+  <nav class="quick" aria-label="Quick actions">
+    <a href="#/solve" style="--accent:linear-gradient(135deg,#6d4aff,#ff4f8b)"><span class="q-ic">${icon("camera", 26)}</span><span>Solve</span></a>
+    <a href="#/cheats" style="--accent:#172043"><span class="q-ic">${icon("game", 26)}</span><span>Cheat Codes</span></a>
+    <a href="#/battle" style="--accent:#ff4f8b"><span class="q-ic">${icon("sword", 26)}</span><span>Battle</span></a>
+    <a href="#/blitz" style="--accent:#ff8a00"><span class="q-ic">${icon("bolt", 26)}</span><span>Blitz</span></a>
+  </nav>
+
+  ${due ? `<a class="card banner" href="#/review"><span class="tile-ic" style="--accent:#12a150">🃏</span><span class="grow"><strong>${due} flashcard${due === 1 ? "" : "s"} ready to review</strong><small>Spaced repetition: review right before you'd forget</small></span><span class="chev">${icon("chevron")}</span></a>` : ""}
 
   ${exam ? `
   <section class="section">
-    <div class="section-head"><h2>${exam.emoji} ${esc(exam.name)} prep</h2><a href="#/exam/${exam.id}" class="link">Open →</a></div>
+    <div class="section-head"><h2>${exam.emoji} ${esc(exam.name)}</h2><a href="#/exam/${exam.id}" class="link">Open</a></div>
     <div class="row-scroll">
-      <a class="card pill-card accent" style="--accent:${exam.color}" href="#/test/${exam.id}"><strong>⏱️ Timed practice test</strong><span>${exam.mock.questions} Qs • ${exam.mock.minutes} min</span></a>
-      ${focus.map((t) => topicChip(t)).join("")}
+      <a class="card pill-card accent" style="--accent:${exam.color}" href="#/test/${exam.id}"><strong>⏱️ Timed practice test</strong><span>${exam.mock.questions} Qs · ${exam.mock.minutes} min · get your score</span></a>
+      ${focus.map((t) => { const m = mastery(t.id); return `<a class="card pill-card" href="#/topic/${t.id}"><strong>${esc(t.name)}</strong><span>${m === null ? "Not started" : `${m}% mastery`}</span></a>`; }).join("")}
     </div>
   </section>` : ""}
 
-  ${recent.length ? `
-  <section class="section">
-    <div class="section-head"><h2>Jump back in</h2></div>
-    <div class="list">${recent.map((t) => topicRow(t)).join("")}</div>
-  </section>` : ""}
+  <section class="section" id="wars">
+    <div class="section-head"><h2>🏆 Borough Wars</h2><a href="#/leaderboard" class="link">Standings</a></div>
+    <a class="card" href="#/leaderboard"><div class="boro-bars" id="wars-bars"><p class="small muted">Which borough studies hardest? Earn XP for yours this week.</p></div></a>
+  </section>
 
-  ${!exam ? `
-  <section class="section">
-    <div class="section-head"><h2>For ${p.grade ? `grade ${esc(p.grade)}` : "you"}</h2><a href="#/explore" class="link">See all →</a></div>
-    <div class="list">${focus.map((t) => topicRow(t)).join("")}</div>
-  </section>` : ""}
+  ${recent.length ? `<section class="section"><div class="section-head"><h2>Jump back in</h2></div><div class="list">${recent.map(topicRow).join("")}</div></section>` : ""}
+
+  ${!exam ? `<section class="section"><div class="section-head"><h2>For ${p.grade ? `grade ${esc(p.grade)}` : "you"}</h2><a href="#/learn" class="link">All</a></div><div class="list">${focus.map(topicRow).join("")}</div></section>` : ""}
 
   <section class="section">
-    <div class="section-head"><h2>All tests</h2><a href="#/exams" class="link">See all →</a></div>
+    <div class="section-head"><h2>Tests</h2><a href="#/exams" class="link">All</a></div>
     <div class="row-scroll">${exams.map((e) => `<a class="card exam-mini" style="--accent:${e.color}" href="#/exam/${e.id}"><span class="em">${e.emoji}</span><strong>${esc(e.name)}</strong></a>`).join("")}</div>
   </section>
 
-  <section class="section">
-    <div class="section-head"><h2>Subjects</h2></div>
-    <div class="grid-4">${subjects.map((s) => `<a class="card subj" style="--accent:${s.color}" href="#/explore?s=${s.id}"><span class="em">${s.emoji}</span>${s.name}</a>`).join("")}</div>
-  </section>`;
+  ${!u ? `<a class="card banner" href="#/login"><span class="tile-ic">${icon("user")}</span><span class="grow"><strong>Save your progress</strong><small>Make a free account with Google or email</small></span><span class="chev">${icon("chevron")}</span></a>` : ""}
+  ${isPremium() ? "" : `<a class="card banner premium-banner" href="#/premium"><span class="tile-ic" style="--accent:#ffb648">${icon("crown")}</span><span class="grow"><strong>Go Premium</strong><small>Solve any homework, every Cheat Code, 5× more Boro</small></span><span class="chev">${icon("chevron")}</span></a>`}`;
+
+  // Borough Wars standings load in the background.
+  fetch("api/leaderboard", { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((lb) => {
+      const box = root.querySelector("#wars-bars");
+      if (!lb || !box) return;
+      const max = Math.max(1, ...lb.boroughs.map((b) => b.xp));
+      box.innerHTML = lb.boroughs.map((b) => `<div class="boro-bar" style="--accent:${BORO_COLORS[b.name]}"><span>${esc(b.name)}</span><div class="bar"><div class="bar-fill" style="width:${Math.max(3, (b.xp / max) * 100)}%"></div></div><span>${b.xp.toLocaleString()}</span></div>`).join("");
+    })
+    .catch(() => {});
 }
+
+export { BORO_COLORS };
 
 export function topicRow(t) {
   const m = mastery(t.id);
+  const color = subjects.find((s) => s.id === t.subject).color;
   return `<a class="row" href="#/topic/${t.id}">
-    <span class="row-dot" style="--accent:${subjects.find((s) => s.id === t.subject).color}"></span>
-    <span class="grow"><strong>${esc(t.name)}</strong><small>${esc(t.course)} • ${esc(t.unit)}</small></span>
-    ${m === null ? `<span class="badge-new">new</span>` : `<span class="ring" style="--p:${m}">${m}%</span>`}
+    <span class="row-dot" style="--accent:${color}"></span>
+    <span class="grow"><strong>${esc(t.name)}</strong><small>${esc(t.course)} · ${esc(t.unit)}</small></span>
+    ${m === null ? `<span class="badge-new">new</span>` : `<span class="ring" style="--p:${m};--accent:${color}">${m}%</span>`}
   </a>`;
-}
-
-function topicChip(t) {
-  const m = mastery(t.id);
-  return `<a class="card pill-card" href="#/topic/${t.id}"><strong>${esc(t.name)}</strong><span>${m === null ? "Not started" : `${m}% mastery`}</span></a>`;
 }

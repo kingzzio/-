@@ -1,6 +1,6 @@
 // Offline support: cache the app shell; network-first so updates show up right away.
-const CACHE = "brainboro-v2";
-const SHELL = ["./", "index.html", "css/styles.css", "js/app.js", "manifest.webmanifest", "icons/icon.svg"];
+const CACHE = "brainboro-5ee8ac15f4";
+const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon.svg"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
