@@ -1,0 +1,10 @@
+{
+  "name": "BrainBoro — Test Prep for NYC Students",
+  "short_name": "BrainBoro",
+  "description": "SHSAT, TACHS, Regents & SAT prep with flashcards, quizzes, Brain Battles and an AI tutor.",
+  "start_url": "./#/",
+  "display": "standalone",
+  "background_color": "#0f0d1a",
+  "theme_color": "#7b5cff",
+  "icons": [{ "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
