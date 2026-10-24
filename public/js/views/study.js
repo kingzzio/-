@@ -2,6 +2,15 @@
 import { state, save, addXp, recordAnswer, reviewCard, cardDue, todayKey } from "../store.js";
 import { esc, toast, confetti, celebrateBadges, share, baseUrl, aiAvailable, aiQuiz } from "../ui.js";
 import { getTopic, getExam, buildQuiz, dailyQuiz, cardId, topics, exams, examTopicIds, subjects } from "../content.js";
+import { aiCheat, openCheat } from "./cheats.js";
+import { cheatcodes } from "../data/cheatcodes.js";
+
+// Plays the hand-made Cheat Code for this exact question if there is one, otherwise asks the AI (Premium).
+const playCheat = (q) => {
+  const known = cheatcodes.find((c) => c.q === q.q);
+  if (known) openCheat({ ...known, choices: q.choices, a: q.a });
+  else aiCheat(q);
+};
 
 // ---------------- Flashcards ----------------
 export function flashcards(root, { id }, query) {
@@ -170,6 +179,7 @@ export function runQuiz(root, questions, opts) {
         <strong>${ok ? `✅ ${praise[(i + combo) % praise.length]} +${gain} XP${combo >= 3 ? ` • ${combo} in a row 🔥` : ""}` : `❌ Not quite — answer: ${esc(q.choices[q.a])}`}</strong>
         <p>${esc(q.exp)}</p>
         <div class="btn-row">
+          <button class="btn ghost small" id="cheat">🕹️ Cheat Code</button>
           ${ok ? "" : `<button class="btn ghost small" id="why">🤖 Explain with Boro</button>`}
           <button class="btn" id="next">${i + 1 < questions.length ? "Next →" : "See results"}</button>
         </div>
@@ -181,6 +191,7 @@ export function runQuiz(root, questions, opts) {
     };
     next.focus();
     root.querySelector("#why")?.addEventListener("click", () => askBoro(q, k));
+    root.querySelector("#cheat").addEventListener("click", () => playCheat(q));
     root.querySelector(".combo")?.replaceWith(Object.assign(document.createElement("span"), { className: `combo ${combo >= 2 ? "hot" : ""}`, textContent: `🔥 ${combo}` }));
   };
 
@@ -223,6 +234,7 @@ export function runQuiz(root, questions, opts) {
     root.querySelector("#more")?.addEventListener("click", () => more());
     root.querySelector("#share").onclick = () => share({ title: "BrainBoro", text: `I scored ${correct}/${total} on ${title} on BrainBoro 🧠🔥 Can you beat me?`, url: opts.shareUrl || baseUrl() });
     root.querySelectorAll("[data-why]").forEach((b) => (b.onclick = () => askBoro(answers[Number(b.dataset.why)].q, answers[Number(b.dataset.why)].picked)));
+    root.querySelectorAll("[data-cheat]").forEach((b) => (b.onclick = () => playCheat(answers[Number(b.dataset.cheat)].q)));
     onFinish?.(result, root.querySelector("#extra"));
   };
 
@@ -264,7 +276,7 @@ function reviewItem(a, n) {
     <p><strong>${n + 1}.</strong> ${esc(q.q).replace(/\n/g, "<br>")}</p>
     <p class="small">${picked === null ? "⏭️ Skipped" : ok ? "✅" : `❌ You said: ${esc(q.choices[picked])}`} • Answer: <strong>${esc(q.choices[q.a])}</strong></p>
     <p class="small muted">${esc(q.exp)}</p>
-    ${ok ? "" : `<button class="link small" data-why="${n}">🤖 Explain with Boro</button>`}
+    ${ok ? "" : `<button class="link small" data-why="${n}">🤖 Explain with Boro</button> · `}<button class="link small" data-cheat="${n}">🕹️ Cheat Code</button>
   </div>`;
 }
 

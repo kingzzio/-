@@ -1,4 +1,5 @@
 // Small UI helpers: escaping, safe markdown, toasts, confetti, sharing, and the AI API client.
+import { state } from "./store.js";
 
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
@@ -45,6 +46,7 @@ export function toast(message, { emoji = "✨", ms = 2600 } = {}) {
   el.className = "toast";
   el.innerHTML = `<span>${esc(emoji)}</span><span>${esc(message)}</span>`;
   box.appendChild(el);
+  while (box.children.length > 3) box.firstElementChild.remove();
   setTimeout(() => el.classList.add("out"), ms);
   setTimeout(() => el.remove(), ms + 400);
 }
@@ -98,30 +100,40 @@ export async function share({ title, text, url }) {
 export const baseUrl = () => `${location.origin}${location.pathname}`;
 
 // ---------- AI API client ----------
-let aiStatus = null;
-export async function aiAvailable() {
-  if (aiStatus !== null) return aiStatus;
-  try {
-    const res = await fetch("api/status", { cache: "no-store" });
-    aiStatus = res.ok && (await res.json()).ai === true;
-  } catch {
-    aiStatus = false;
-  }
-  return aiStatus;
+let statusPromise = null;
+/** { ai, premium, checkoutUrl, member } from the server; all false when there's no server (static hosting). */
+export function serverStatus() {
+  statusPromise ??= fetch("api/status", { cache: "no-store", headers: premiumHeader() })
+    .then((res) => (res.ok ? res.json() : {}))
+    .catch(() => ({}));
+  return statusPromise;
+}
+export const resetServerStatus = () => (statusPromise = null);
+export const aiAvailable = async () => (await serverStatus()).ai === true;
+
+function premiumHeader() {
+  const token = state.premium?.token;
+  return token ? { "X-BrainBoro-Premium": token } : {};
 }
 
 async function errorFrom(res) {
   try {
-    return (await res.json()).error || `Error ${res.status}`;
+    const data = await res.json();
+    return Object.assign(new Error(data.error || `Error ${res.status}`), { premium: data.premium === true, status: res.status });
   } catch {
-    return `Error ${res.status}`;
+    return Object.assign(new Error(`Error ${res.status}`), { status: res.status });
   }
+}
+
+export async function post(path, payload, signal) {
+  const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json", ...premiumHeader() }, body: JSON.stringify(payload), signal });
+  if (!res.ok) throw await errorFrom(res);
+  return res;
 }
 
 /** Streams a tutor reply; onText receives the full text so far. */
 export async function streamTutor(payload, onText, signal) {
-  const res = await fetch("api/tutor", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), signal });
-  if (!res.ok) throw new Error(await errorFrom(res));
+  const res = await post("api/tutor", payload, signal);
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let text = "";
@@ -135,9 +147,7 @@ export async function streamTutor(payload, onText, signal) {
 }
 
 export async function aiQuiz(payload) {
-  const res = await fetch("api/quiz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-  if (!res.ok) throw new Error(await errorFrom(res));
-  const { questions } = await res.json();
+  const { questions } = await (await post("api/quiz", payload)).json();
   return questions.map((q) => ({ q: q.question, choices: q.choices, a: q.answer_index, exp: q.explanation, ai: true }));
 }
 

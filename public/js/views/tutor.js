@@ -26,6 +26,7 @@ export default function tutor(root, _p, query) {
   let mode = sessionStorage.getItem("brainboro:mode") || "explain";
   let image = null;
   let controller = null;
+  let assignment = "";
 
   root.className = "main chat-page";
   root.innerHTML = `
@@ -88,6 +89,7 @@ export default function tutor(root, _p, query) {
           topic: topic ? `${topic.name} (${topic.course})` : undefined,
           exam: exam?.name,
           grade: state.profile.grade,
+          assignment: assignment || undefined,
           // Only the latest photo is re-sent, to keep requests small.
           messages: chat.slice(0, -1).map((m, n, arr) => ({ role: m.role, text: m.text, image: n === arr.length - 1 ? m.image : undefined })),
         },
@@ -163,8 +165,13 @@ export default function tutor(root, _p, query) {
   const handoff = sessionStorage.getItem("brainboro:ask");
   if (handoff) {
     sessionStorage.removeItem("brainboro:ask");
-    const { text } = JSON.parse(handoff);
-    mode = "explain";
+    const { text, mode: handMode, assignment: handAssignment } = JSON.parse(handoff);
+    mode = handMode || "explain";
+    assignment = handAssignment || "";
+    root.querySelectorAll("[data-mode]").forEach((x) => {
+      x.classList.toggle("on", x.dataset.mode === mode);
+      x.setAttribute("aria-checked", x.dataset.mode === mode);
+    });
     send(text);
   } else msg.focus();
 

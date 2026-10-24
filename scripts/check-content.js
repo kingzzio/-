@@ -6,6 +6,8 @@ import history from "../public/js/data/history.js";
 import { exams, extraTopics } from "../public/js/data/exams.js";
 import { curricula } from "../public/js/data/curricula.js";
 import { generators } from "../public/js/generators.js";
+import { cheatcodes } from "../public/js/data/cheatcodes.js";
+import { resources } from "../public/js/data/resources.js";
 
 const topics = [...math, ...ela, ...science, ...history, ...extraTopics];
 const ids = new Map();
@@ -32,7 +34,21 @@ for (const t of topics) {
 for (const e of exams) for (const s of e.sections) for (const id of s.topics) if (!ids.has(id)) errors.push(`exam ${e.id}: unknown topic ${id}`);
 for (const c of curricula) for (const course of c.courses) for (const [unit, list] of course.units) for (const id of list) if (!ids.has(id)) errors.push(`curriculum ${c.id} / ${unit}: unknown topic ${id}`);
 
-console.log(`${topics.length} topics, ${cards} flashcards, ${qs} hand-written questions, ${Object.keys(generators).length} generators, ${exams.length} exams, ${curricula.length} curricula`);
+const examIds = new Set(exams.map((e) => e.id));
+const curIds = new Set(curricula.map((c) => c.id));
+for (const c of cheatcodes) {
+  if (!ids.has(c.topic)) errors.push(`cheat ${c.id}: unknown topic ${c.topic}`);
+  for (const e of c.exams) if (!examIds.has(e)) errors.push(`cheat ${c.id}: unknown exam ${e}`);
+  if (!(c.a >= 0 && c.a < c.choices.length)) errors.push(`cheat ${c.id}: bad answer index`);
+  if (c.steps.length < 3 || c.steps.some((s) => !s.show || !s.say)) errors.push(`cheat ${c.id}: bad steps`);
+}
+for (const r of resources) {
+  if (!/^https:\/\//.test(r.url)) errors.push(`resource ${r.id}: url must be https`);
+  for (const e of r.exams || []) if (!examIds.has(e)) errors.push(`resource ${r.id}: unknown exam ${e}`);
+  for (const c of r.curricula || []) if (!curIds.has(c)) errors.push(`resource ${r.id}: unknown curriculum ${c}`);
+}
+
+console.log(`${topics.length} topics, ${cards} flashcards, ${qs} hand-written questions, ${Object.keys(generators).length} generators, ${exams.length} exams, ${curricula.length} curricula, ${cheatcodes.length} cheat codes, ${resources.length} resources`);
 if (errors.length) {
   console.error(errors.join("\n"));
   process.exit(1);

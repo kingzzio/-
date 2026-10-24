@@ -16,8 +16,10 @@ const fresh = () => ({
   badges: [],
   tests: [],
   daily: {},
-  stats: { answered: 0, correct: 0, cardsReviewed: 0, aiChats: 0, battles: 0, perfect: 0 },
+  stats: { answered: 0, correct: 0, cardsReviewed: 0, aiChats: 0, battles: 0, perfect: 0, cheatCodes: 0, tasksDone: 0 },
   theme: "",
+  premium: { token: "", exp: 0 },
+  planner: { items: [], feeds: [], streak: { count: 0, last: "" }, lastSync: 0 },
 });
 
 function load() {
@@ -26,7 +28,16 @@ function load() {
     if (!raw) return fresh();
     const data = JSON.parse(raw);
     const base = fresh();
-    return { ...base, ...data, profile: { ...base.profile, ...data.profile }, stats: { ...base.stats, ...data.stats }, goal: { ...base.goal, ...data.goal }, streak: { ...base.streak, ...data.streak } };
+    return {
+      ...base,
+      ...data,
+      profile: { ...base.profile, ...data.profile },
+      stats: { ...base.stats, ...data.stats },
+      goal: { ...base.goal, ...data.goal },
+      streak: { ...base.streak, ...data.streak },
+      premium: { ...base.premium, ...data.premium },
+      planner: { ...base.planner, ...data.planner },
+    };
   } catch {
     return fresh();
   }
@@ -49,6 +60,8 @@ export function resetAll() {
   Object.assign(state, fresh());
   save();
 }
+
+export const isPremium = () => Boolean(state.premium.token) && state.premium.exp > Date.now();
 
 export const level = (xp = state.xp) => Math.floor(Math.sqrt(xp / 40)) + 1;
 export const levelFloor = (lv) => (lv - 1) ** 2 * 40;
@@ -147,6 +160,8 @@ export const BADGES = [
   { id: "test-taker", emoji: "📝", name: "Test Taker", desc: "Finish a timed practice test", test: (s) => s.tests.length >= 1 },
   { id: "ai-buddy", emoji: "🤖", name: "AI Buddy", desc: "Ask Boro a question", test: (s) => s.stats.aiChats >= 1 },
   { id: "challenger", emoji: "🥊", name: "Challenger", desc: "Play a Brain Battle", test: (s) => s.stats.battles >= 1 },
+  { id: "hacker", emoji: "🕹️", name: "Code Breaker", desc: "Watch 5 Cheat Codes", test: (s) => s.stats.cheatCodes >= 5 },
+  { id: "on-time", emoji: "📅", name: "Never Late", desc: "Finish 10 assignments", test: (s) => s.stats.tasksDone >= 10 },
   { id: "level-5", emoji: "🧠", name: "Big Brain", desc: "Reach level 5", test: (s) => level(s.xp) >= 5 },
 ];
 

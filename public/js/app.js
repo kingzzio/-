@@ -9,6 +9,10 @@ import { examList, examPage, testRoute } from "./views/exams.js";
 import curriculum from "./views/curriculum.js";
 import tutor from "./views/tutor.js";
 import profile from "./views/profile.js";
+import resourcesView from "./views/resources.js";
+import { cheatList, cheatRoute } from "./views/cheats.js";
+import premium from "./views/premium.js";
+import planner from "./views/planner.js";
 
 const routes = [
   ["", home],
@@ -27,12 +31,18 @@ const routes = [
   ["curriculum", curriculum],
   ["tutor", tutor],
   ["me", profile],
+  ["resources", resourcesView],
+  ["cheats", cheatList],
+  ["cheat/:id", cheatRoute],
+  ["premium", premium],
+  ["planner", planner],
 ];
 
 const tabs = [
   ["", "🏠", "Home"],
   ["explore", "🔎", "Explore"],
   ["exams", "🎯", "Tests"],
+  ["planner", "📅", "Planner"],
   ["tutor", "🤖", "Boro AI"],
   ["me", "👤", "Me"],
 ];
@@ -62,7 +72,7 @@ export function go(path) {
 
 function renderChrome(path) {
   const root = path.split("/")[0];
-  const active = { topic: "explore", flash: "explore", quiz: "explore", practice: "explore", exam: "exams", test: "exams", curriculum: "explore" }[root] ?? root;
+  const active = { topic: "explore", flash: "explore", quiz: "explore", practice: "explore", exam: "exams", test: "exams", curriculum: "explore", resources: "explore", cheats: "", cheat: "" }[root] ?? root;
   document.getElementById("tabs").innerHTML = tabs
     .map(([p, icon, label]) => `<a href="#/${p}" class="tab ${active === p ? "on" : ""}" ${active === p ? 'aria-current="page"' : ""}><span class="tab-i">${icon}</span><span>${label}</span></a>`)
     .join("");
@@ -77,7 +87,7 @@ function render() {
   cleanup = null;
   const { path, query } = parseHash();
   const main = document.getElementById("main");
-  if (!state.profile.onboarded && !path.startsWith("battle")) {
+  if (!state.profile.onboarded && !/^(battle|cheat\/|premium)/.test(path)) {
     renderChrome("");
     onboarding(main);
     return;

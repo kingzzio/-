@@ -2,6 +2,8 @@
 import { state, save, mastery } from "../store.js";
 import { esc } from "../ui.js";
 import { curricula, schoolTypes, getTopic, subjectOf } from "../content.js";
+import { resourcesFor } from "../data/resources.js";
+import { resourceCard } from "./resources.js";
 
 export default function curriculum(root, _p, query) {
   const pick = state.profile.curriculum || {};
@@ -42,6 +44,12 @@ export default function curriculum(root, _p, query) {
           .join("")}</div>
         <p class="small muted">Not sure? Check the cover of your textbook or workbook, your class website/Google Classroom, or ask your teacher. Schools sometimes reorder or skip units.</p>
       </section>
+
+      ${cur && resourcesFor({ curriculum: cur.id }).length ? `
+      <section class="section">
+        <div class="section-head"><h2>📂 Free ${esc(cur.name.split(" (")[0])} materials</h2></div>
+        <div class="list">${resourcesFor({ curriculum: cur.id }).map(resourceCard).join("")}</div>
+      </section>` : ""}
 
       ${cur ? `
       <section class="section">

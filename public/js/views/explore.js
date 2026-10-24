@@ -2,6 +2,7 @@ import { state, mastery, cardKnown } from "../store.js";
 import { esc } from "../ui.js";
 import { topics, subjects, getTopic, search, examsForTopic, subjectOf, cardId } from "../content.js";
 import { topicRow } from "./home.js";
+import { cheatcodes } from "../data/cheatcodes.js";
 
 const GRADES = [6, 7, 8, 9, 10, 11, 12];
 
@@ -13,6 +14,7 @@ export function explore(root, _params, query) {
     <div class="chip-row" id="subj">${[{ id: "", name: "All", emoji: "✨" }, ...subjects].map((s) => `<button class="chip ${f.s === s.id ? "on" : ""}" data-s="${s.id}">${s.emoji} ${s.name}</button>`).join("")}</div>
     <div class="chip-row" id="grade"><button class="chip ${!f.g ? "on" : ""}" data-g="">All grades</button>${GRADES.map((g) => `<button class="chip ${f.g == g ? "on" : ""}" data-g="${g}">${g}th</button>`).join("")}</div>
     <a class="card banner" href="#/curriculum"><span class="em">🗺️</span><span class="grow"><strong>Find your class curriculum</strong><small>Eureka, Illustrative Math, Amplify, enVision & more → jump to your exact unit</small></span><span class="chev">›</span></a>
+    <a class="card banner" href="#/resources"><span class="em">📂</span><span class="grow"><strong>Free Resources</strong><small>Past Regents PDFs, official SHSAT & SAT practice, free curriculum downloads</small></span><span class="chev">›</span></a>
     <div id="results"></div>`;
 
   const results = root.querySelector("#results");
@@ -95,6 +97,8 @@ export function topicPage(root, { id }) {
       <a class="action" href="#/battle?t=${t.id}"><span class="em">🥊</span><strong>Battle a friend</strong><small>Same questions, who wins?</small></a>
       <a class="action" href="#/tutor?topic=${encodeURIComponent(t.id)}"><span class="em">🤖</span><strong>Ask Boro</strong><small>Explain it to me</small></a>
     </div>
+
+    ${cheatcodes.some((c) => c.topic === t.id) ? `<section class="section"><div class="section-head"><h2>🕹️ Cheat Codes</h2><a class="link" href="#/cheats">All →</a></div><div class="list">${cheatcodes.filter((c) => c.topic === t.id).map((c) => `<a class="row" href="#/cheat/${c.id}"><span class="em">▶</span><span class="grow"><strong>${esc(c.trick)}</strong><small>${esc(c.q)}</small></span></a>`).join("")}</div></section>` : ""}
 
     <section class="section">
       <div class="section-head"><h2>Key ideas</h2></div>

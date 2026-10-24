@@ -3,6 +3,8 @@ import { esc } from "../ui.js";
 import { exams, getExam, getTopic, buildQuiz, examTopicIds } from "../content.js";
 import { runQuiz } from "./study.js";
 import { topicRow } from "./home.js";
+import { resourceCard } from "./resources.js";
+import { resourcesFor } from "../data/resources.js";
 
 const groups = [
   ["High school admissions", ["shsat", "tachs"]],
@@ -67,6 +69,7 @@ export function examPage(root, { id }) {
 
     <section class="section"><div class="section-head"><h2>📋 Format</h2></div><ul class="bullets">${e.format.map((f) => `<li>${esc(f)}</li>`).join("")}</ul></section>
     <section class="section"><div class="section-head"><h2>💡 Strategy tips</h2></div><ul class="bullets">${e.tips.map((f) => `<li>${esc(f)}</li>`).join("")}</ul></section>
+    ${resourcesFor({ exam: e.id }).length ? `<section class="section"><div class="section-head"><h2>📂 Free official practice</h2><a class="link" href="#/resources?exam=${e.id}">All →</a></div><div class="list">${resourcesFor({ exam: e.id }).map(resourceCard).join("")}</div></section>` : ""}
     ${e.schools ? `<section class="section"><div class="section-head"><h2>🏫 Schools</h2></div><ul class="bullets">${e.schools.map((f) => `<li>${esc(f)}</li>`).join("")}</ul></section>` : ""}
     <p class="small muted">Formats and dates change — always confirm with the official source: <a href="${e.official.url}" target="_blank" rel="noopener">${esc(e.official.label)} ↗</a></p>`;
   root.querySelector("#set")?.addEventListener("click", () => {

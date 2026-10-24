@@ -1,4 +1,4 @@
-import { state, levelProgress, levelName, xpToday, dueCount, todayKey, streakAlive, mastery } from "../store.js";
+import { state, levelProgress, levelName, xpToday, dueCount, todayKey, streakAlive, mastery, isPremium } from "../store.js";
 import { esc } from "../ui.js";
 import { exams, getExam, getTopic, examTopicIds, subjects, topics } from "../content.js";
 
@@ -11,6 +11,7 @@ export default function home(root) {
   const exam = getExam(p.exam);
   const daily = state.daily[todayKey()];
   const due = dueCount();
+  const dueToday = state.planner.items.filter((t) => !t.done && todayKey(new Date(t.due)) === todayKey()).length;
   const recent = Object.entries(state.topics)
     .sort((a, b) => b[1].last - a[1].last)
     .slice(0, 3)
@@ -57,9 +58,13 @@ export default function home(root) {
   <div class="grid-2">
     <a class="card tile" href="#/review"><div class="tile-emoji">🃏</div><h3>Review cards</h3><p>${due ? `${due} card${due === 1 ? "" : "s"} due` : "All caught up!"}</p></a>
     <a class="card tile" href="#/battle"><div class="tile-emoji">🥊</div><h3>Brain Battle</h3><p>Challenge a friend</p></a>
+    <a class="card tile" href="#/cheats"><div class="tile-emoji">🕹️</div><h3>Cheat Codes</h3><p>30-sec test shortcuts</p></a>
+    <a class="card tile" href="#/planner"><div class="tile-emoji">📅</div><h3>Planner</h3><p>${dueToday ? `${dueToday} due today` : "Never be late again"}</p></a>
     <a class="card tile" href="#/tutor"><div class="tile-emoji">🤖</div><h3>Ask Boro</h3><p>AI homework help</p></a>
     <a class="card tile" href="#/curriculum"><div class="tile-emoji">🗺️</div><h3>My curriculum</h3><p>Find your class units</p></a>
   </div>
+  <a class="card banner" href="#/resources"><span class="em">📂</span><span class="grow"><strong>Free Resources</strong><small>Past Regents PDFs, official SHSAT & SAT practice, free curriculum downloads</small></span><span class="chev">›</span></a>
+  ${isPremium() ? "" : `<a class="card banner premium-banner" href="#/premium"><span class="em">👑</span><span class="grow"><strong>Go Premium</strong><small>Every Cheat Code, 5× more Boro, smart planner</small></span><span class="chev">›</span></a>`}
 
   ${exam ? `
   <section class="section">
