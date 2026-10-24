@@ -1,0 +1,22 @@
+{
+  "name": "brainboro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BrainBoro \u2014 free test prep & study app for NYC students: SHSAT, TACHS, Regents, SAT, grades 6\u201312 math, ELA, science and history.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "start": "node scripts/build.js && node server.js",
+    "dev": "node server.js",
+    "check": "node scripts/check-content.js && node scripts/check-generators.js && node scripts/check-server.js && node scripts/check-auth.js && node scripts/check-ai.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.10"
+  }
+}

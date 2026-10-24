@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>BrainBoro — SHSAT, TACHS, Regents & SAT Prep</title>
+  <meta name="description" content="Free study app for NYC students: SHSAT, TACHS, Regents (Algebra I, Geometry, Biology & more), SAT, and grades 6–12 math, ELA, science and history. Flashcards, quizzes, timed tests, Brain Battles and an AI tutor.">
+  <meta name="theme-color" content="#f5f4fa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0c0b14" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta property="og:title" content="BrainBoro — study smarter, score higher">
+  <meta property="og:description" content="SHSAT, TACHS, Regents & SAT prep with flashcards, quizzes, Brain Battles and an AI tutor. Free.">
+  <meta property="og:type" content="website">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="BrainBoro">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Fonts load without blocking the first paint; system fonts show until they arrive. -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Inter:wght@400;500;600;700;800&family=Caveat+Brush&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Inter:wght@400;500;600;700;800&family=Caveat+Brush&display=swap"></noscript>
+  <link rel="stylesheet" href="css/styles.css?v=72463e9c94">
+  <link rel="modulepreload" href="dist/app.js?v=72463e9c94">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="topbar">
+    <a href="#/" class="logo" aria-label="BrainBoro home"><span class="logo-mark">🧠</span><b>Brain<span>Boro</span></b></a>
+    <div class="hud" id="hud"></div>
+  </header>
+  <main id="main" class="main" tabindex="-1"></main>
+  <nav class="tabs" id="tabs" aria-label="Main"></nav>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <noscript><p style="padding:2rem">BrainBoro needs JavaScript turned on.</p></noscript>
+  <script type="module" src="dist/app.js?v=72463e9c94"></script>
+</body>
+</html>
