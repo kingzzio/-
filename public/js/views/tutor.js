@@ -183,5 +183,5 @@ export default function tutor(root, _p, query) {
 
 function offlineNote() {
   return `<div class="card warn"><strong>🔌 Boro isn't connected on this site yet.</strong>
-    <p class="small">The AI tutor needs the site owner to add an Anthropic API key on the server (see the README). Everything else — flashcards, quizzes, timed tests, battles — works without it!</p></div>`;
+    <p class="small">The site owner needs to add an AI key. A free Gemini key works (see SETUP.md). Everything else, like flashcards, quizzes, timed tests and battles, works without it!</p></div>`;
 }

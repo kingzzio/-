@@ -8,7 +8,7 @@
     "build": "node scripts/build.js",
     "start": "node scripts/build.js && node server.js",
     "dev": "node server.js",
-    "check": "node scripts/check-content.js && node scripts/check-generators.js && node scripts/check-server.js && node scripts/check-auth.js"
+    "check": "node scripts/check-content.js && node scripts/check-generators.js && node scripts/check-server.js && node scripts/check-auth.js && node scripts/check-ai.js"
   },
   "engines": {
     "node": ">=18"

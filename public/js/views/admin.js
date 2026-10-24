@@ -42,6 +42,7 @@ export default function admin(root) {
         <div class="stat"><div class="stat-v">${s.premium}</div><div class="stat-l">premium</div></div>
         <div class="stat"><div class="stat-v">${s.google}</div><div class="stat-l">Google sign-ins</div></div>
       </div>
+      <div class="card banner" style="margin-top:10px"><span class="tile-ic" style="--accent:${s.ai?.length ? "#12a150" : "#e5294f"}">${icon("spark")}</span><span class="grow"><strong>AI: ${s.ai?.length ? esc(s.ai.join(" → ")) : "off"}</strong><small>${s.ai?.length ? "Tried in this order. If one is out of free uses, the next takes over." : "Add a free GEMINI_API_KEY in Vercel to turn on AI (see SETUP.md)."}</small></span></div>
       ${s.db === "file" ? `<div class="card warn small"><strong>Heads up:</strong> accounts are saved in a local file. On Vercel that resets, so add a free Upstash Redis (see the README) before you launch.</div>` : ""}
 
       <section class="section">

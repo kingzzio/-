@@ -314,7 +314,7 @@ export function quizRoute(root, { id }, query) {
     cleanup?.();
     if (query.ai === "1") {
       if (!(await aiAvailable())) {
-        root.innerHTML = `<a class="back" href="#/topic/${t.id}">← Back</a><div class="empty"><div class="big-emoji">✨</div><h2>AI quizzes aren't switched on here yet</h2><p>The site owner needs to add an Anthropic API key. Meanwhile, try the regular quiz${t.gen?.length ? " or unlimited practice" : ""}!</p><div class="btn-row"><a class="btn" href="#/quiz/${t.id}">Regular quiz</a></div></div>`;
+        root.innerHTML = `<a class="back" href="#/topic/${t.id}">← Back</a><div class="empty"><div class="big-emoji">✨</div><h2>AI quizzes aren't switched on here yet</h2><p>The site owner needs to add an AI key (a free Gemini key works). Meanwhile, try the regular quiz${t.gen?.length ? " or unlimited practice" : ""}!</p><div class="btn-row"><a class="btn" href="#/quiz/${t.id}">Regular quiz</a></div></div>`;
         return;
       }
       loading(root, "Boro is writing fresh questions for you…");

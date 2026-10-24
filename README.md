@@ -42,7 +42,7 @@ It gets its own icon and opens full screen like any app. It works offline, launc
 
 Putting it in the **App Store** costs $99/year (Apple developer account). **Google Play** is a one-time $25. If you ever want that, the same code can be wrapped with Capacitor; nothing needs to be rewritten. The web app + website path is completely free.
 
-**What does cost money:** hosting (Vercel), the database (Upstash) and Google sign-in are free. The **AI is not free**: Anthropic bills per use. Set `BRAINBORO_MODEL=claude-haiku-5-5` to make it very cheap, keep the free daily limits, and let Premium sales cover the bill. Without an API key, everything except the AI features still works.
+**What does cost money:** nothing is required. Hosting (Vercel), the database (Upstash), Google sign-in and the AI can all run free: **Gemini's free tier**, with **Groq's free tier** as an automatic backup (see SETUP.md, Step 3). Claude is an optional paid upgrade for the best answers.
 
 ## Run it locally
 
@@ -62,7 +62,10 @@ Everything except AI and Google sign-in works with no setup. Accounts are saved 
 | Variable | What it's for |
 |---|---|
 | `SESSION_SECRET` | Optional. Signs logins. If you don't set it, one is generated and stored in the database. |
-| `ANTHROPIC_API_KEY` | Turns on Boro, Solve, Cheat Codes and AI quizzes. Get one at console.anthropic.com. |
+| `GEMINI_API_KEY` | **Free AI.** Turns on Boro, Snap & Answer, Essay Coach, Cheat Codes and AI quizzes. Free key at aistudio.google.com. (`GEMINI_MODEL` defaults to `gemini-flash-lite-latest`.) |
+| `GROQ_API_KEY` | **Free AI backup.** Takes over when Gemini runs out of free uses. Free key at console.groq.com. (`GROQ_MODEL` defaults to `meta-llama/llama-4-scout-17b-16e-instruct`.) |
+| `OPENROUTER_API_KEY` | Optional free/paid backup using OpenRouter's `:free` models. |
+| `ANTHROPIC_API_KEY` | Optional paid AI (Claude), the best quality. Used first when set, unless `AI_PROVIDERS` sets a different order. |
 | `GOOGLE_CLIENT_ID` | Turns on "Continue with Google" and Google Classroom import (steps below). |
 | `ADMIN_EMAILS` | Admin accounts. Defaults to `esanni104@gmail.com`. |
 | `BRAINBORO_CHECKOUT_URL` | Optional payment link (e.g. Stripe Payment Link) on the Premium page. |
@@ -97,7 +100,8 @@ public/            the app (HTML/CSS + JS modules; `npm run build` bundles them 
 lib/auth.js        passwords (scrypt), sessions, Google ID-token verification, admin rules
 lib/accounts.js    auth/profile/progress/leaderboard/admin endpoints
 lib/db.js          Upstash/Vercel KV or local JSON file
-lib/tutor.js       Claude API calls (tutor, quizzes, Cheat Codes, Solve, steps)
+lib/tutor.js       AI features (tutor, quizzes, Cheat Codes, Solve, Answer, Essay Coach, steps)
+lib/providers.js   AI providers: Claude, Gemini, Groq, OpenRouter, with automatic fallback
 lib/canvas.js      Canvas import (token used per request, never stored server-side)
 lib/calendar.js    .ics import with SSRF protection
 api/               Vercel serverless functions
