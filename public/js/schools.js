@@ -24,6 +24,7 @@ export function guessType(title) {
 export function mergeAssignments(list, source) {
   let added = 0;
   for (const ev of list) {
+    ev.url = /^https?:\/\//i.test(ev.url || "") ? ev.url : ""; // never keep javascript: or data: links from a feed
     const key = `${source}:${ev.uid || `${ev.title}|${ev.due}`}`;
     const existing = state.planner.items.find((t) => t.key === key);
     if (existing) {

@@ -44,7 +44,10 @@ async function sendFile(req, res, file) {
   // Versioned assets (?v=…) never change, so phones can keep them forever.
   const versioned = /[?&]v=/.test(req.url) || file.includes(`${join("public", "dist")}`);
   res.setHeader("Cache-Control", versioned ? "public, max-age=31536000, immutable" : "no-cache");
-  if (ext === ".js" || ext === ".html") res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Content-Security-Policy", "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'");
   const accept = String(req.headers["accept-encoding"] || "");
   const encoding = COMPRESSIBLE.has(ext) ? (/\bbr\b/.test(accept) ? "br" : /\bgzip\b/.test(accept) ? "gzip" : "") : "";
   if (encoding) {

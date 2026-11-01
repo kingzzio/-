@@ -90,4 +90,10 @@ await accounts.handleAdmin(reqWith(auth.sessionCookie(owner)), { action: "setBan
 assert.equal(await auth.currentUser(reqWith(auth.sessionCookie(kid2))), null);
 await assert.rejects(accounts.handleAdmin(reqWith(auth.sessionCookie(owner)), { action: "setBanned", id: owner.id, banned: true }), /admin/);
 globalThis.fetch = realFetch;
+// 10 wrong passwords lock the account for a while, even with the right password.
+for (let i = 0; i < 10; i++) await assert.rejects(auth.login({ email: "lock@test.dev", password: "nope" }));
+await auth.signup({ name: "Lock", email: "lock2@test.dev", password: "password123" });
+for (let i = 0; i < 10; i++) await assert.rejects(auth.login({ email: "lock2@test.dev", password: "wrong-pass" }), /Wrong email/);
+await assert.rejects(auth.login({ email: "lock2@test.dev", password: "password123" }), /Too many wrong tries/);
+
 console.log("auth checks OK");
