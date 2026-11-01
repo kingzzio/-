@@ -21,6 +21,7 @@ const state = { geminiRateLimited: false, geminiOldSchema: false };
 const gem = createServer(async (req, res) => {
   const body = await read(req);
   log.push({ who: "gemini", url: req.url, key: req.headers["x-goog-api-key"], body });
+  if (req.headers["x-goog-api-key"] === "bad") return res.writeHead(400).end('{"error":{"code":400,"message":"API key not valid. Please pass a valid API key.","status":"INVALID_ARGUMENT","details":[{"reason":"API_KEY_INVALID"}]}}');
   if (state.geminiRateLimited) return res.writeHead(429).end('{"error":{"message":"quota"}}');
   if (req.url.includes(":streamGenerateContent")) {
     assert.ok(req.url.includes("alt=sse"));
@@ -49,14 +50,14 @@ const groqSrv = createServer(async (req, res) => {
   const sys = body.messages[0].content;
   const key = Object.keys(fixtures).find((k) => sys.includes(`"${k}"`));
   res.writeHead(200, { "content-type": "application/json" });
-  res.end(JSON.stringify({ choices: [{ message: { content: "```json\n" + JSON.stringify(fixtures[key]) + "\n```" } }] }));
+  res.end(JSON.stringify({ choices: [{ message: { content: "```json\n" + JSON.stringify(fixtures[key] || { answer: "4" }) + "\n```" } }] }));
 });
 
 await new Promise((r) => gem.listen(0, r));
 await new Promise((r) => groqSrv.listen(0, r));
 delete process.env.ANTHROPIC_API_KEY;
 delete process.env.ANTHROPIC_AUTH_TOKEN;
-process.env.GEMINI_API_KEY = "gem-key";
+process.env.GEMINI_API_KEY = ' "gem-key"\n'; // pasted with quotes and a newline: must be cleaned up
 process.env.GEMINI_API_BASE = `http://localhost:${gem.address().port}`;
 process.env.GROQ_API_KEY = "groq-key";
 process.env.GROQ_API_BASE = `http://localhost:${groqSrv.address().port}`;
@@ -106,6 +107,23 @@ assert.ok(gImg.body.messages[1].content.some((c) => c.type === "image_url" && c.
 // 5. Everything rate-limited → a friendly error.
 process.env.AI_PROVIDERS = "gemini";
 await assert.rejects(tutor.streamTutor({ messages: [{ role: "user", text: "hi" }] }, () => {}), (err) => tutor.describeError(err).status === 429);
+
+// 6. "Check the AI" page: a bad Gemini key is explained, Groq still works, and a misnamed variable is spotted.
+delete process.env.AI_PROVIDERS;
+state.geminiRateLimited = false;
+process.env.GEMINI_API_KEY = "bad";
+process.env.GEMINI_KEY = "oops";
+const { testProviders } = await import("../lib/providers.js");
+const check = await testProviders();
+const [g, q] = check.results;
+assert.equal(g.ok, false);
+assert.match(g.hint, /GEMINI_API_KEY isn't valid/);
+assert.equal(q.ok, true);
+assert.deepEqual(check.lookalikes, ["GEMINI_KEY"]);
+// ...and real requests skip the bad key and use Groq.
+const fb = await tutor.generateQuiz({ topic: "Addition" });
+assert.equal(fb[0].answer_index, 1);
+assert.equal(log.at(-1).who, "groq");
 
 gem.close();
 groqSrv.close();

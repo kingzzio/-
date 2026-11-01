@@ -18,6 +18,7 @@ import planner from "./views/planner.js";
 import learn from "./views/learn.js";
 import { loginView, BOROUGHS } from "./views/auth.js";
 import admin from "./views/admin.js";
+import aicheck from "./views/aicheck.js";
 import connect from "./views/connect.js";
 import answer from "./views/answer.js";
 import essay from "./views/essay.js";
@@ -56,6 +57,7 @@ const routes = [
   ["leaderboard", leaderboard],
   ["login", loginView],
   ["admin", admin],
+  ["aicheck", aicheck],
 ];
 
 const tabs = [
@@ -66,7 +68,7 @@ const tabs = [
   ["me", "user", "Me"],
 ];
 // Which tab lights up for each page.
-const TAB_OF = { topic: "learn", flash: "learn", quiz: "learn", practice: "learn", explore: "learn", exams: "learn", exam: "learn", test: "learn", curriculum: "learn", resources: "learn", cheats: "learn", cheat: "learn", blitz: "learn", review: "", daily: "", battle: "", connect: "planner", solve: "", answer: "", essay: "", premium: "me", admin: "me", leaderboard: "", login: "me", mistakes: "me" };
+const TAB_OF = { topic: "learn", flash: "learn", quiz: "learn", practice: "learn", explore: "learn", exams: "learn", exam: "learn", test: "learn", curriculum: "learn", resources: "learn", cheats: "learn", cheat: "learn", blitz: "learn", review: "", daily: "", battle: "", connect: "planner", solve: "", answer: "", essay: "", premium: "me", admin: "me", aicheck: "me", leaderboard: "", login: "me", mistakes: "me" };
 
 let cleanup = null;
 
@@ -115,7 +117,7 @@ function render() {
   const main = document.getElementById("main");
   main.className = "main";
   lastChrome = "";
-  if (!state.profile.onboarded && !/^(battle|cheat\/|premium|login)/.test(path)) {
+  if (!state.profile.onboarded && !/^(battle|cheat\/|premium|login|aicheck)/.test(path)) {
     renderChrome("");
     onboarding(main);
     return;

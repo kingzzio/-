@@ -39,6 +39,7 @@ export default function profile(root) {
       <a class="row" href="#/premium"><span class="tile-ic" style="--accent:#ffb648">${icon("crown")}</span><span class="grow"><strong>${isPremium() ? "Premium" : "Go Premium"}</strong><small>${isPremium() ? (u?.admin ? "All features unlocked (admin)" : "Thanks for the support!") : "Snap & Answer, Cheat Codes, 5× Boro"}</small></span><span class="chev">${icon("chevron")}</span></a>
       <a class="row" href="#/leaderboard"><span class="tile-ic" style="--accent:#ff4f8b">${icon("trophy")}</span><span class="grow"><strong>Borough Wars</strong><small>${u?.borough ? `Repping ${esc(u.borough)}` : "Pick your borough"}</small></span><span class="chev">${icon("chevron")}</span></a>
       <a class="row" href="#/connect"><span class="tile-ic" style="--accent:#12a150">${icon("link")}</span><span class="grow"><strong>School connections</strong><small>${(state.planner.connections || []).length ? (state.planner.connections || []).map((c) => esc(c.label)).join(", ") : "Google Classroom, Canvas & more"}</small></span><span class="chev">${icon("chevron")}</span></a>
+      <a class="row" href="#/aicheck"><span class="tile-ic" style="--accent:#7c5cff">${icon("spark")}</span><span class="grow"><strong>Check the AI</strong><small>Is the AI working on this site?</small></span><span class="chev">${icon("chevron")}</span></a>
     </div>
 
     <section class="section">
