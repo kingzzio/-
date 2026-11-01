@@ -1,7 +1,7 @@
 // Screen Coach: share your screen while doing IXL / DeltaMath / Khan homework and Boro works through
 // each problem with you, looking again whenever the screen changes. It guides; you do the answering.
 import { state, save, addXp, isPremium } from "../store.js";
-import { esc, md, toast, aiAvailable, streamTutor, celebrateBadges } from "../ui.js";
+import { esc, md, toast, aiAvailable, streamTutor, celebrateBadges, readImage } from "../ui.js";
 import { icon } from "../icons.js";
 
 const MAX_SIDE = 1400;
@@ -20,10 +20,39 @@ function ticker(ms, fn) {
   }
 }
 
+// Reads Boro's replies out loud, so you can keep your eyes on the homework.
+const speakable = (text) => text.replace(/[*_`#>]/g, "").replace(/\s+/g, " ").trim();
+function speak(text) {
+  if (!("speechSynthesis" in window) || !text) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(speakable(text));
+  u.rate = 1.05;
+  speechSynthesis.speak(u);
+}
+
+// Phones can't share their screen with a web page, so on phones you send screenshots instead.
+// The chat is kept in sessionStorage so it survives switching to the homework app and back.
+const CHAT_KEY = "brainboro:coach";
+const loadChat = () => {
+  try {
+    return JSON.parse(sessionStorage.getItem(CHAT_KEY) || "[]");
+  } catch {
+    return [];
+  }
+};
+const saveChat = (chat) => {
+  try {
+    sessionStorage.setItem(CHAT_KEY, JSON.stringify(chat.slice(-30).map(({ role, text, auto }) => ({ role, text, auto }))));
+  } catch {
+    /* private mode */
+  }
+};
+
 export default function coach(root) {
   const canShare = Boolean(navigator.mediaDevices?.getDisplayMedia);
   let stream = null, video = null, grabber = null, stopTick = null, pip = null;
-  let chat = [], busy = false, controller = null;
+  let chat = [], busy = false, controller = null, phone = false;
+  let voice = Boolean(state.coachVoice);
   let auto = true, autoLooks = 0, lastAuto = 0, lastSig = null, pendingSig = null;
 
   const intro = () => {
@@ -40,9 +69,24 @@ export default function coach(root) {
       </div>
       ${canShare
         ? `<button class="btn big" id="share" style="margin-top:14px">${icon("eye", 20)} Share my screen</button>`
-        : `<div class="card warn" style="margin-top:14px"><strong>Screen sharing works on a laptop or Chromebook</strong><p class="small">Open BrainBoro in Chrome or Edge on a computer. On a phone, screenshot the problem and send it to Boro or Snap & Answer instead.</p><div class="btn-row"><a class="btn small" href="#/answer">Snap & Answer</a><a class="btn small ghost" href="#/tutor">Ask Boro</a></div></div>`}
+        : `<div class="card" style="margin-top:14px"><strong>📱 On a phone? Use screenshots</strong>
+            <div class="coach-steps" style="margin-top:10px">
+              <div><span class="coach-n">1</span><span>In your homework app, take a screenshot (iPhone: side button + volume up. Android: power + volume down).</span></div>
+              <div><span class="coach-n">2</span><span>Swipe back to BrainBoro and tap <strong>Add screenshot</strong>. Boro picks up right where you left off.</span></div>
+              <div><span class="coach-n">3</span><span>Turn on <strong>🔊 Talk</strong> and Boro reads each step out loud.</span></div>
+            </div>
+            <button class="btn big" id="phone" style="margin-top:12px">${icon("camera", 20)} Start coaching</button>
+            <p class="tiny muted" style="margin:8px 0 0">Live screen sharing works on a laptop or Chromebook in Chrome or Edge.</p></div>`}
       <p class="tiny muted center" style="margin-top:12px">Boro only sees what you share, only while you share it, and nothing is saved. It won't fill in answers or play live games for you, so you actually learn it (and don't get flagged).</p>`;
     root.querySelector("#share")?.addEventListener("click", start);
+    root.querySelector("#phone")?.addEventListener("click", startPhone);
+  };
+
+  const startPhone = async () => {
+    if (!(await aiAvailable())) return toast("AI isn't switched on for this site yet.", { emoji: "🔌" });
+    phone = true;
+    chat = loadChat();
+    drawPanel();
   };
 
   const start = async () => {
@@ -72,6 +116,11 @@ export default function coach(root) {
     stream = null;
     controller?.abort();
     pip?.close();
+    if (phone) {
+      phone = false;
+      chat = [];
+      saveChat(chat);
+    }
     if (location.hash.startsWith("#/coach")) intro();
   };
 
@@ -158,6 +207,7 @@ export default function coach(root) {
       state.stats.aiChats++;
       celebrateBadges(addXp(2));
       save();
+      if (voice) speak(reply.text);
     } catch (err) {
       reply.text = `⚠️ ${err.message}`;
       if (err.status === 429) {
@@ -167,6 +217,7 @@ export default function coach(root) {
     } finally {
       busy = false;
       controller = null;
+      if (phone) saveChat(chat);
       drawLog();
     }
   };
@@ -181,7 +232,7 @@ export default function coach(root) {
   const drawPanel = () => {
     root.innerHTML = `
       <div id="coach-panel" class="coach-panel">
-        <div class="coach-head"><span class="boro">🤖</span><span class="grow"><strong>Screen Coach</strong><small class="muted"><span class="live-dot"></span> Watching your screen</small></span><button class="btn small ghost" id="stop">Stop</button></div>
+        <div class="coach-head"><span class="boro">🤖</span><span class="grow"><strong>Screen Coach</strong><small class="muted">${phone ? "Send a screenshot anytime" : `<span class="live-dot"></span> Watching your screen`}</small></span><button class="btn small ghost" id="stop">${phone ? "New chat" : "Stop"}</button></div>
         <div class="coach-log" aria-live="polite"></div>
         <div class="coach-controls"></div>
         <form class="composer-row coach-compose"><input id="say" placeholder="Tell Boro your answer or ask…" autocomplete="off" style="flex:1;min-width:0;border:0;background:transparent;padding:9px 8px;outline:none"><button class="send" aria-label="Send">${icon("send", 18)}</button></form>
@@ -200,18 +251,42 @@ export default function coach(root) {
       const text = input.value.trim();
       if (!text) return;
       input.value = "";
-      look(text); // every message includes a fresh look at the screen
+      if (phone) send(text);
+      else look(text); // every message includes a fresh look at the screen
     };
   };
 
   const drawControls = () => {
     const box = panelEl()?.querySelector(".coach-controls");
     if (!box) return;
+    const talk = "speechSynthesis" in window ? `<button class="chip ${voice ? "on" : ""}" id="talk">${voice ? "🔊 Talk on" : "🔈 Talk off"}</button>` : "";
+    if (phone) {
+      box.innerHTML = `
+        <label class="btn small" style="cursor:pointer"><input type="file" accept="image/*" id="shot" hidden>${icon("camera", 16)} Add screenshot</label>
+        <button class="btn small ghost" id="hint">I'm stuck</button>
+        ${talk}`;
+      box.querySelector("#shot").onchange = async (e) => {
+        const f = e.target.files[0];
+        e.target.value = "";
+        if (!f) return;
+        try {
+          const img = await readImage(f, MAX_SIDE);
+          send(chat.length ? "Here's my screen now." : "Here's my homework. Help me with the problem I'm on.", { mediaType: img.mediaType, data: img.data });
+        } catch (err) {
+          toast(err.message, { emoji: "⚠️" });
+        }
+      };
+      box.querySelector("#hint").onclick = () => send("I'm stuck on this step. Give me a smaller hint (not the answer).");
+      wireTalk(box);
+      return;
+    }
     box.innerHTML = `
       <button class="btn small" id="lookbtn">${icon("eye", 16)} Look at my screen</button>
       <button class="btn small ghost" id="hint">I'm stuck</button>
       <button class="chip ${auto ? "on" : ""}" id="auto">${auto ? "Auto-follow on" : "Auto-follow off"}</button>
+      ${talk}
       ${"documentPictureInPicture" in window && !pip ? `<button class="chip" id="pop">Pop out ↗</button>` : ""}`;
+    wireTalk(box);
     box.querySelector("#lookbtn").onclick = () => look("Look at my screen now.");
     box.querySelector("#hint").onclick = () => look("I'm stuck on this step. Give me a smaller hint (not the answer).");
     box.querySelector("#auto").onclick = () => {
@@ -221,12 +296,30 @@ export default function coach(root) {
     box.querySelector("#pop")?.addEventListener("click", popOut);
   };
 
+  const wireTalk = (box) => {
+    const b = box.querySelector("#talk");
+    if (!b) return;
+    b.onclick = () => {
+      voice = !voice;
+      state.coachVoice = voice;
+      save();
+      // Speaking once from a tap unlocks speech on iPhone for the later replies.
+      if (voice) speak("Okay, I'll read my answers out loud.");
+      else speechSynthesis.cancel();
+      drawControls();
+    };
+  };
+
   const drawLog = () => {
     const log = panelEl()?.querySelector(".coach-log");
     if (!log) return;
+    if (!chat.length && phone) {
+      log.innerHTML = `<div class="chat-empty"><p>Take a screenshot of the problem you're on, then tap <strong>Add screenshot</strong>. I'll work through it with you one step at a time.</p></div>`;
+      return;
+    }
     log.innerHTML = chat
       .filter((m) => !(m.role === "user" && m.auto))
-      .map((m) => (m.role === "assistant" ? `<div class="bubble assistant">${md(m.text || "👀 Looking…")}</div>` : `<div class="bubble user"><p>${esc(m.text)}</p></div>`))
+      .map((m) => (m.role === "assistant" ? `<div class="bubble assistant">${md(m.text || "👀 Looking…")}</div>` : `<div class="bubble user">${m.image && phone ? `<img src="data:${m.image.mediaType};base64,${m.image.data}" alt="Your screenshot" style="max-height:160px;border-radius:10px">` : ""}<p>${esc(m.text)}</p></div>`))
       .join("");
     scrollLog();
   };
@@ -256,6 +349,14 @@ export default function coach(root) {
     });
   };
 
-  intro();
-  return stop;
+  // Coming back from the homework app with a chat in progress: pick up where you left off.
+  if (!canShare && loadChat().length) startPhone();
+  else intro();
+  return () => {
+    stopTick?.();
+    stream?.getTracks().forEach((t) => t.stop());
+    controller?.abort();
+    pip?.close();
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+  };
 }
