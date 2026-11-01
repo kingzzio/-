@@ -33,6 +33,7 @@ export default function tutor(root, _p, query) {
     <div class="chat-head">
       <div class="boro">🤖</div>
       <div class="grow"><h1>Boro</h1><p class="small muted">Your AI study coach${exam ? ` • ${esc(exam.name)}` : ""}${topic ? ` • ${esc(topic.name)}` : ""}</p></div>
+      <a class="btn ghost small" href="#/coach" title="Share your screen with Boro">👀 Screen Coach</a>
       <button class="btn ghost small" id="clear" title="New chat">🧹</button>
     </div>
     <div class="modes" role="radiogroup" aria-label="Tutor mode">${MODES.map(([id, label, sub]) => `<button class="mode ${mode === id ? "on" : ""}" data-mode="${id}" role="radio" aria-checked="${mode === id}"><strong>${label}</strong><small>${sub}</small></button>`).join("")}</div>

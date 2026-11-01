@@ -23,6 +23,8 @@ const fresh = () => ({
   account: null,
   blitz: { best: 0 },
   answers: [],
+  answerPlatform: "",
+  boroscore: {},
   essay: null,
 });
 

@@ -22,7 +22,7 @@ const types = {
 };
 const COMPRESSIBLE = new Set([".html", ".js", ".css", ".json", ".map", ".webmanifest", ".svg"]);
 const routes = Object.fromEntries(
-  ["tutor", "quiz", "status", "cheatcode", "solve", "answer", "essay", "steps", "calendar", "canvas", "premium", "auth", "me", "admin", "leaderboard"].map((n) => [`/api/${n}`, h[`${n}Handler`]]),
+  ["tutor", "quiz", "status", "cheatcode", "solve", "answer", "essay", "steps", "calendar", "canvas", "premium", "auth", "me", "admin", "leaderboard", "live"].map((n) => [`/api/${n}`, h[`${n}Handler`]]),
 );
 
 // Compressed copies, keyed by path + modified time, so each file is only compressed once.
