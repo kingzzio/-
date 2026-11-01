@@ -40,6 +40,7 @@ This powers Snap & Answer, Boro, Essay Coach, Cheat Codes and AI quizzes.
 1. Go to **aistudio.google.com** → sign in with Google → **Get API key** → **Create API key** → copy it.
 2. In Vercel: your project → **Settings → Environment Variables** → Name `GEMINI_API_KEY`, Value = the key → **Save**.
 3. **Deployments → ⋯ → Redeploy.** Done: the AI works, and it reads homework photos too.
+4. To check it, open your site → **Me → Check the AI** (or go to `your-site/#/aicheck`). It tests each key and tells you exactly what to fix.
 
 **Free option B: Groq (add it as a backup)**
 1. Go to **console.groq.com** → sign up → **API Keys** → **Create API Key** → copy it.
