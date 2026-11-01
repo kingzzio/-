@@ -5,6 +5,8 @@ import { icon } from "../icons.js";
 import { board, openCheat } from "./cheats.js";
 import { search } from "../content.js";
 
+// Tells the AI how each site lays out its questions, so screenshots are read correctly.
+const PLATFORMS = [["", "Any"], ["ixl", "IXL"], ["deltamath", "DeltaMath"], ["khan", "Khan Academy"], ["kahoot", "Kahoot practice"], ["quizizz", "Quizizz"]];
 const SUBJECT_COLOR = { Math: "var(--c-math)", Science: "var(--c-sci)", ELA: "var(--c-ela)", History: "var(--c-hist)", Other: "var(--brand)" };
 
 export default function answer(root, _p, query) {
@@ -12,6 +14,7 @@ export default function answer(root, _p, query) {
   sessionStorage.removeItem("brainboro:solve");
   let image = null;
   let closePlayer = null;
+  let platform = state.answerPlatform || "";
 
   const drawStart = () => {
     const history = state.answers || [];
@@ -26,6 +29,7 @@ export default function answer(root, _p, query) {
           <small>Math, science, history: we find every problem and answer it, step by step</small>
         </div>
       </label>
+      <div class="chip-row" id="plat" style="margin:10px 0 0"><span class="small muted">From:</span>${PLATFORMS.map(([id, name]) => `<button class="chip ${platform === id ? "on" : ""}" data-p="${id}">${name}</button>`).join("")}</div>
       <div class="btn-row"><label class="btn ghost" style="cursor:pointer"><input type="file" accept="image/*" id="up" hidden>${icon("folder", 18)} Upload photo</label></div>
       <div class="divider">or type it</div>
       <div class="composer-row"><textarea id="txt" rows="1" maxlength="2000" placeholder="e.g. What is 3% of 4%?" style="flex:1;min-width:0;border:0;background:transparent;resize:none;padding:9px 8px;outline:none">${esc(pre?.problem || "")}</textarea><button class="send" id="go" aria-label="Get answer">${icon("spark", 20)}</button></div>
@@ -42,6 +46,12 @@ export default function answer(root, _p, query) {
     root.querySelector("#cam").onchange = (e) => pick(e.target.files[0]);
     root.querySelector("#up").onchange = (e) => pick(e.target.files[0]);
     root.querySelector("#go").onclick = () => run();
+    root.querySelectorAll("[data-p]").forEach((b) => (b.onclick = () => {
+      platform = b.dataset.p;
+      state.answerPlatform = platform;
+      save();
+      root.querySelectorAll("[data-p]").forEach((x) => x.classList.toggle("on", x === b));
+    }));
     root.querySelector("#txt").onkeydown = (e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), run());
     root.querySelector("#clear")?.addEventListener("click", () => ((state.answers = []), save(), drawStart()));
     root.querySelectorAll("[data-h]").forEach((b) => (b.onclick = () => drawResults({ problems: [state.answers[Number(b.dataset.h)]] }, null)));
@@ -61,7 +71,7 @@ export default function answer(root, _p, query) {
       if (el) el.textContent = msgs[Math.min(++m, msgs.length - 1)];
     }, 1800);
     try {
-      const data = await (await post("api/answer", { text, image: image && { mediaType: image.mediaType, data: image.data } })).json();
+      const data = await (await post("api/answer", { text, platform: platform || undefined, image: image && { mediaType: image.mediaType, data: image.data } })).json();
       clearInterval(iv);
       if (!data.problems.length) {
         toast(data.note || "Couldn't read that. Try a clearer, closer photo.", { emoji: "🤔", ms: 4000 });

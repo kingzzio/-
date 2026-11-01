@@ -24,6 +24,9 @@ export default function learn(root) {
       </section>
 
       <div class="list">
+        <a class="row" href="#/live"><span class="tile-ic" style="--accent:#7c3aed">${icon("users")}</span><span class="grow"><strong>BrainBoro Live</strong><small>Class game: join with a PIN, fastest right answers win</small></span><span class="chev">${icon("chevron")}</span></a>
+        <a class="row" href="#/boroscore"><span class="tile-ic" style="--accent:#12a150">${icon("gauge")}</span><span class="grow"><strong>BoroScore</strong><small>Get a skill to 100. Past 90 is the Challenge Zone</small></span><span class="chev">${icon("chevron")}</span></a>
+        <a class="row" href="#/coach"><span class="tile-ic" style="--accent:#ff4f8b">${icon("eye")}</span><span class="grow"><strong>Screen Coach</strong><small>Boro watches your IXL / DeltaMath screen and works it through with you</small></span><span class="chev">${icon("chevron")}</span></a>
         <a class="row" href="#/curriculum"><span class="tile-ic" style="--accent:#0ea5e9">${icon("map")}</span><span class="grow"><strong>My class curriculum</strong><small>Eureka, Illustrative Math, Amplify, enVision… jump to your exact unit</small></span><span class="chev">${icon("chevron")}</span></a>
         <a class="row" href="#/resources"><span class="tile-ic" style="--accent:#12a150">${icon("folder")}</span><span class="grow"><strong>Free Resources</strong><small>Past Regents PDFs, official SHSAT & SAT practice</small></span><span class="chev">${icon("chevron")}</span></a>
         <a class="row" href="#/essay"><span class="tile-ic" style="--accent:#0ea5e9">${icon("doc")}</span><span class="grow"><strong>Essay Coach</strong><small>Plan, write in your voice, get a rubric grade</small></span><span class="chev">${icon("chevron")}</span></a>
