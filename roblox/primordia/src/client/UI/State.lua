@@ -4,6 +4,7 @@ local State = {
 	inventory = {},
 	coins = 0,
 	favorites = {},
+	armor = {},
 	faction = nil,
 	invites = {},
 	factionColors = {},

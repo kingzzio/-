@@ -22,16 +22,41 @@ local ping = 0
 ---------------------------------------------------------------------------
 -- SERVER CARD ("13,427 of ∞ people")
 ---------------------------------------------------------------------------
+local leftColumn = New("Frame", {
+	BackgroundTransparency = 1,
+	Position = UDim2.fromOffset(16, 16),
+	Size = UDim2.fromOffset(300, 700),
+	Parent = gui,
+}, { New("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder }) })
+HUD.LeftColumn = leftColumn
+
+local thumbs = {}
+local function headshot(img: ImageLabel, userId: number)
+	task.spawn(function()
+		if not thumbs[userId] then
+			local ok, url = pcall(function()
+				return Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+			end)
+			thumbs[userId] = ok and url or ""
+		end
+		img.Image = thumbs[userId]
+	end)
+end
+
+local CARD_W = 270
+local COLLAPSED_H = 66
+local EXPANDED_H = 336
+
 local function buildServerCard()
 	local card = Theme.Card({
 		Name = "ServerCard",
-		Position = UDim2.fromOffset(16, 16),
-		Size = UDim2.fromOffset(270, 66),
+		Size = UDim2.fromOffset(CARD_W, COLLAPSED_H),
 		StrokeColor = C.Accent,
 		ClipsDescendants = true,
-		Parent = gui,
+		LayoutOrder = 1,
+		Parent = leftColumn,
 	})
-	card.UIStroke.Thickness = 2
+	card.UIStroke.Thickness = 2.5
 	local icon = New("Frame", { Size = UDim2.fromOffset(44, 44), Position = UDim2.fromOffset(12, 11), BackgroundColor3 = Color3.fromRGB(80, 170, 90), Parent = card }, {
 		Theme.Corner(10),
 		New("UIGradient", { Color = ColorSequence.new(Color3.fromRGB(90, 200, 255), Color3.fromRGB(110, 210, 90)), Rotation = 90 }),
@@ -40,21 +65,21 @@ local function buildServerCard()
 	Theme.Label(Config.GameName, { Position = UDim2.fromOffset(66, 10), Size = UDim2.fromOffset(190, 22), TextSize = 18, Parent = card })
 	local sub = Theme.Label("Servers", { Position = UDim2.fromOffset(66, 32), Size = UDim2.fromOffset(190, 20), TextSize = 13, TextColor3 = C.Muted, Parent = card })
 
-	-- expanded content
-	local avatars = New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(12, 70), Size = UDim2.new(1, -24, 0, 54), Parent = card }, {
-		New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6) }),
+	-- 3x2 avatar grid; last cell is the "+N" bubble (like a Roblox server list card)
+	local grid = New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(16, 74), Size = UDim2.fromOffset(CARD_W - 32, 134), Parent = card }, {
+		New("UIGridLayout", { CellSize = UDim2.fromOffset(66, 62), CellPadding = UDim2.fromOffset(20, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
 	})
-	local countLabel = Theme.Label("", { Position = UDim2.fromOffset(12, 130), Size = UDim2.new(1, -24, 0, 22), TextSize = 17, Parent = card })
-	local barBack = New("Frame", { Position = UDim2.fromOffset(12, 156), Size = UDim2.new(1, -24, 0, 6), BackgroundColor3 = C.CardLight, BorderSizePixel = 0, Parent = card }, { Theme.Corner(3) })
-	local barFill = New("Frame", { Size = UDim2.fromScale(0.3, 1), BackgroundColor3 = C.Accent, BorderSizePixel = 0, Parent = barBack }, { Theme.Corner(3) })
-	local pingPill = Theme.Button("--ms", C.CardLight, { Position = UDim2.fromOffset(56, 172), Size = UDim2.fromOffset(60, 26), TextSize = 13, Parent = card })
-	Theme.Button("···", C.CardLight, { Position = UDim2.fromOffset(12, 172), Size = UDim2.fromOffset(38, 26), Parent = card })
-	local hop = Theme.Button("Hop", C.Blue, { Position = UDim2.fromOffset(12, 206), Size = UDim2.new(0.62, -12, 0, 34), Parent = card })
-	local share = Theme.Button("Share", C.CardLight, { Position = UDim2.new(0.62, 6, 0, 206), Size = UDim2.new(0.38, -18, 0, 34), Parent = card })
-	local idLabel = Theme.Label("ID: ", { Position = UDim2.fromOffset(12, 246), Size = UDim2.new(1, -24, 0, 16), TextSize = 11, TextColor3 = C.Muted, Parent = card })
+	local countLabel = Theme.Label("", { Position = UDim2.fromOffset(16, 212), Size = UDim2.new(1, -32, 0, 22), TextSize = 17, Parent = card })
+	local barBack = New("Frame", { Position = UDim2.fromOffset(16, 238), Size = UDim2.new(1, -32, 0, 6), BackgroundColor3 = C.CardLight, BorderSizePixel = 0, ClipsDescendants = true, Parent = card }, { Theme.Corner(3) })
+	local barFill = New("Frame", { Size = UDim2.fromScale(0.35, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = barBack }, { Theme.Corner(3) })
+	Theme.Button("···", C.CardLight, { Position = UDim2.fromOffset(16, 252), Size = UDim2.fromOffset(40, 26), Parent = card })
+	local pingPill = Theme.Button("--ms", C.CardLight, { Position = UDim2.fromOffset(62, 252), Size = UDim2.fromOffset(60, 26), TextSize = 13, Parent = card })
+	local join = Theme.Button("Join", C.Blue, { Position = UDim2.fromOffset(16, 284), Size = UDim2.new(0.66, -20, 0, 34), Parent = card })
+	local share = Theme.Button("Share", C.CardLight, { Position = UDim2.new(0.66, 2, 0, 284), Size = UDim2.new(0.34, -18, 0, 34), Parent = card })
+	local idLabel = Theme.Label("ID: ", { Position = UDim2.fromOffset(16, 320), Size = UDim2.new(1, -32, 0, 14), TextSize = 11, TextColor3 = C.Muted, Parent = card })
 
-	hop.MouseButton1Click:Connect(function()
-		State.OpenPanel("Map")
+	join.MouseButton1Click:Connect(function()
+		State.OpenPanel("Map") -- pick an Echo on the map to hop into their shard
 	end)
 	share.MouseButton1Click:Connect(function()
 		share.Text = Config.DiscordInvite
@@ -66,10 +91,10 @@ local function buildServerCard()
 	local expanded = false
 	local function setExpanded(on: boolean)
 		expanded = on
-		TweenService:Create(card, TweenInfo.new(0.25, Enum.EasingStyle.Quart), { Size = UDim2.fromOffset(270, on and 272 or 66) }):Play()
+		TweenService:Create(card, TweenInfo.new(0.25, Enum.EasingStyle.Quart), { Size = UDim2.fromOffset(CARD_W, on and EXPANDED_H or COLLAPSED_H) }):Play()
 	end
 	card.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and input.Position.Y - card.AbsolutePosition.Y < COLLAPSED_H then
 			setExpanded(not expanded)
 		end
 	end)
@@ -79,35 +104,30 @@ local function buildServerCard()
 		end
 	end)
 
-	local thumbs = {}
-	local function refreshAvatars()
-		for _, c in avatars:GetChildren() do
-			if c:IsA("ImageLabel") or c:IsA("Frame") then
+	local function refreshAvatars(total: number)
+		for _, c in grid:GetChildren() do
+			if c:IsA("GuiObject") then
 				c:Destroy()
 			end
 		end
 		local list = Players:GetPlayers()
-		for i = 1, math.min(5, #list) do
-			local p = list[i]
-			local img = New("ImageLabel", { Size = UDim2.fromOffset(44, 44), BackgroundColor3 = C.CardLight, Parent = avatars }, { Theme.Corner(22) })
-			task.spawn(function()
-				thumbs[p.UserId] = thumbs[p.UserId] or Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
-				img.Image = thumbs[p.UserId]
-			end)
+		local shown = math.min(5, #list)
+		for i = 1, shown do
+			local img = New("ImageLabel", { BackgroundColor3 = Color3.fromRGB(230, 230, 235), LayoutOrder = i, Parent = grid }, { Theme.Corner(31) })
+			headshot(img, list[i].UserId)
 		end
-		local others = (ReplicatedStorage:GetAttribute("GlobalPlayers") or #list) - math.min(5, #list)
+		local others = total - shown
 		if others > 0 then
-			local more = New("Frame", { Size = UDim2.fromOffset(44, 44), BackgroundColor3 = C.CardLight, Parent = avatars }, { Theme.Corner(22) })
-			Theme.Label("+" .. Theme.FormatNumber(others), { Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Center, TextSize = 12, Parent = more })
+			local more = New("Frame", { BackgroundColor3 = Color3.fromRGB(95, 98, 108), LayoutOrder = 99, Parent = grid }, { Theme.Corner(31) })
+			Theme.Label("+" .. Theme.FormatNumber(others), { Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Center, TextSize = others > 9999 and 12 or 16, Parent = more })
 		end
 	end
 
 	-- "of ∞" bar never fills: it shimmers forever.
 	RunService.RenderStepped:Connect(function()
-		local t = (os.clock() * 0.25) % 1
-		barFill.Position = UDim2.fromScale(t - 0.3, 0)
+		local t = (os.clock() * 0.3) % 1.4
+		barFill.Position = UDim2.fromScale(t - 0.35, 0)
 	end)
-	barBack.ClipsDescendants = true
 
 	local function refresh()
 		local total = ReplicatedStorage:GetAttribute("GlobalPlayers") or #Players:GetPlayers()
@@ -116,7 +136,7 @@ local function buildServerCard()
 		sub.Text = Theme.FormatNumber(total) .. " online · " .. shards .. " shard" .. (shards == 1 and "" or "s")
 		idLabel.Text = "ID: " .. tostring(ReplicatedStorage:GetAttribute("ShardId") or "?") .. "   ·   this shard " .. #Players:GetPlayers() .. "/" .. (ReplicatedStorage:GetAttribute("ShardMax") or "?")
 		pingPill.Text = math.floor(ping) .. "ms"
-		refreshAvatars()
+		refreshAvatars(total)
 	end
 	ReplicatedStorage:GetAttributeChangedSignal("GlobalPlayers"):Connect(refresh)
 	Players.PlayerAdded:Connect(refresh)
@@ -135,6 +155,65 @@ local function buildServerCard()
 end
 
 ---------------------------------------------------------------------------
+-- FACTION WIDGET (always-on member wall under the server card)
+---------------------------------------------------------------------------
+local function buildFactionWidget()
+	local card = Theme.Card({
+		Size = UDim2.fromOffset(CARD_W, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 0.2,
+		Visible = false,
+		LayoutOrder = 2,
+		Parent = leftColumn,
+	})
+	Theme.Padding(10).Parent = card
+	New("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = card })
+	local header = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 28), LayoutOrder = 1, Parent = card })
+	local badge = New("Frame", { Size = UDim2.fromOffset(28, 28), Parent = header }, { Theme.Corner(7) })
+	local badgeTag = Theme.Label("", { Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Center, Font = Theme.FontHeavy, TextSize = 11, TextColor3 = Color3.new(0, 0, 0), Parent = badge })
+	Theme.Label("FACTION", { Position = UDim2.fromOffset(36, 0), Size = UDim2.fromOffset(120, 28), Font = Theme.FontHeavy, TextSize = 18, Parent = header })
+	local members = Theme.Label("", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Size = UDim2.fromOffset(110, 28), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 13, TextColor3 = C.Accent, Parent = header })
+	local wall = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2, Parent = card }, {
+		New("UIGridLayout", { CellSize = UDim2.fromOffset(44, 58), CellPadding = UDim2.fromOffset(6, 4), SortOrder = Enum.SortOrder.LayoutOrder }),
+	})
+
+	local function render(f)
+		card.Visible = f ~= nil
+		if not f then
+			return
+		end
+		local col = Color3.fromHex(f.color)
+		badge.BackgroundColor3 = col
+		badgeTag.Text = f.tag
+		local online = 0
+		for _, m in f.members do
+			if m.online then
+				online += 1
+			end
+		end
+		members.Text = #f.members .. " members · " .. online .. " on"
+		for _, c in wall:GetChildren() do
+			if c:IsA("GuiObject") then
+				c:Destroy()
+			end
+		end
+		for i, m in f.members do
+			local cell = New("Frame", { BackgroundTransparency = 1, LayoutOrder = i, Parent = wall })
+			local img = New("ImageLabel", {
+				Size = UDim2.fromOffset(44, 44),
+				BackgroundColor3 = Color3.fromRGB(230, 230, 235),
+				ImageTransparency = m.online and 0 or 0.55,
+				Parent = cell,
+			}, { Theme.Corner(8), New("UIStroke", { Color = m.rank == "Chief" and C.Gold or col, Thickness = m.online and 2 or 0 }) })
+			headshot(img, m.userId)
+			Theme.Label(m.name, { Position = UDim2.fromOffset(-4, 45), Size = UDim2.fromOffset(52, 12), TextXAlignment = Enum.TextXAlignment.Center, TextSize = 9, TextTruncate = Enum.TextTruncate.AtEnd, TextColor3 = m.online and C.Text or C.Muted, Parent = cell })
+		end
+	end
+	State.On("faction", render)
+	render(State.faction)
+end
+
+---------------------------------------------------------------------------
 -- DOOMSDAY COUNTDOWN
 ---------------------------------------------------------------------------
 local function buildDoomsday()
@@ -145,7 +224,12 @@ local function buildDoomsday()
 		BackgroundColor3 = Color3.fromRGB(14, 14, 20),
 		BackgroundTransparency = 0.1,
 		Parent = gui,
-	}, { Theme.Corner(4), New("UIStroke", { Color = Color3.fromRGB(90, 90, 110), Thickness = 3 }) })
+	}, { Theme.Corner(2), New("UIStroke", { Color = Color3.fromRGB(70, 70, 88), Thickness = 4 }) })
+	-- inner pixel frame
+	New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, -8, 1, -8), Parent = panel }, {
+		Theme.Corner(1),
+		New("UIStroke", { Color = Color3.fromRGB(150, 30, 40), Thickness = 2 }),
+	})
 	local title = Theme.Label("DOOMSDAY", { Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 4), TextXAlignment = Enum.TextXAlignment.Center, Font = Theme.FontPixel, TextSize = 34, TextColor3 = C.Doom, Parent = panel })
 	local sub = Theme.Label(Config.GameName .. " anarchy begins in", { Size = UDim2.new(1, 0, 0, 14), Position = UDim2.fromOffset(0, 38), TextXAlignment = Enum.TextXAlignment.Center, TextSize = 11, TextColor3 = C.Muted, Parent = panel })
 	local clock = Theme.Label("", { Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 54), TextXAlignment = Enum.TextXAlignment.Center, Font = Theme.FontPixel, TextSize = 24, TextColor3 = Theme.Colors.Gold, Parent = panel })
@@ -313,6 +397,7 @@ end
 
 function HUD.Init()
 	buildServerCard()
+	buildFactionWidget()
 	buildDoomsday()
 	buildVitals()
 	buildTerritory()

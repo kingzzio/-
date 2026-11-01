@@ -30,6 +30,8 @@ Recipes.List = {
 	{ out = "Watchtower", n = 1, cost = { Plank = 20, Rope = 4 }, station = "Workbench" },
 	{ out = "HoneyBun", n = 1, cost = { Wheat = 2, Honey = 1 }, station = "Workbench" },
 	{ out = "WarStew", n = 1, cost = { Beet = 2, Pumpkin = 1, Hide = 1 }, station = "Workbench" },
+	{ out = "HideHood", n = 1, cost = { Hide = 3, Fiber = 4 }, station = "Workbench" },
+	{ out = "HideTunic", n = 1, cost = { Hide = 5, Fiber = 6 }, station = "Workbench" },
 
 	-- forge
 	{ out = "CopperBar", n = 1, cost = { CopperOre = 2, Wood = 1 }, station = "Forge" },
@@ -53,6 +55,13 @@ Recipes.List = {
 	{ out = "HoneycombPlate", n = 1, cost = { Wax = 6, Honey = 3, IronBar = 1 }, station = "Forge" },
 	{ out = "HoneycombWall", n = 1, cost = { HoneycombPlate = 3, MetalWall = 1 }, station = "Forge" },
 	{ out = "TarPit", n = 1, cost = { Obsidian = 1, Clay = 4 }, station = "Forge" },
+	{ out = "IronHelm", n = 1, cost = { IronBar = 5, Hide = 1 }, station = "Forge" },
+	{ out = "HornedHelm", n = 1, cost = { IronBar = 4, Hide = 3, GoldBar = 1 }, station = "Forge" },
+	{ out = "IronPlate", n = 1, cost = { IronBar = 9, Hide = 2 }, station = "Forge" },
+	{ out = "GoldenHelm", n = 1, cost = { GoldBar = 5, IronBar = 2 }, station = "Forge" },
+	{ out = "WarlordPlate", n = 1, cost = { IronBar = 10, GoldBar = 3, Beet = 4 }, station = "Forge" },
+	{ out = "HiveArmor", n = 1, cost = { HoneycombPlate = 4, IronBar = 4 }, station = "Forge" },
+	{ out = "SunstoneCrown", n = 1, cost = { Sunstone = 4, GoldBar = 3 }, station = "Forge" },
 
 	-- siege workshop
 	{ out = "SiegeWorkshop", n = 1, cost = { Plank = 30, IronBar = 6, Rope = 8 }, station = "Forge" },

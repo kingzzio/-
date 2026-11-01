@@ -18,13 +18,15 @@ local FactionUI = require(UI.FactionUI)
 local MapUI = require(UI.MapUI)
 local BuildController = require(Controllers.BuildController)
 local ActionController = require(Controllers.ActionController)
+local WaypointController = require(Controllers.WaypointController)
 
 pcall(function()
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 end)
 
-Remotes.InventoryUpdate.OnClientEvent:Connect(function(inventory, coins, favorites)
+Remotes.InventoryUpdate.OnClientEvent:Connect(function(inventory, coins, favorites, armor)
 	State.Set("favorites", favorites or {})
+	State.Set("armor", armor or {})
 	State.Set("coins", coins or 0)
 	State.Set("inventory", inventory or {})
 end)
@@ -37,6 +39,7 @@ FactionUI.Init()
 MapUI.Init()
 BuildController.Init()
 ActionController.Init(BuildController.IsActive)
+WaypointController.Init()
 InventoryUI.OnPlace = BuildController.Start
 
 -- First-join walkthrough as trailer-style captions.

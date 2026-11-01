@@ -12,6 +12,7 @@ src/shared/                 → ReplicatedStorage.Shared
   Config.lua                all tuning knobs (seed, Doomsday date, prices, radii…)
   WorldGen.lua              deterministic infinite terrain + 9 biomes + rivers
   Items / Recipes / Buildables / Nodes / Crops
+  BuildModels.lua           detailed models for every buildable (shared so the client can preview them)
   Remotes.lua               every RemoteEvent/Function in one place
 src/server/                 → ServerScriptService.Server
   Main.server.lua           boots all services
@@ -25,6 +26,7 @@ src/server/                 → ServerScriptService.Server
     FactionService          factions, ranks, wars, treasury, totem claims, alerts, map control
     HarvestService          gathering
     CombatService           swing logic, health bars, hunger, bounties, death satchels
+    ArmorService            wearable helmets/plate shown on characters, +max HP
     SiegeService            catapult / ballista / ram
     FarmService             plots, sprinklers, harvesters, market carts, apiaries
     ShopService             global dynamic-price market
@@ -33,9 +35,10 @@ src/server/                 → ServerScriptService.Server
     EventService            meteors, golden hour, supply drops, blood moon, trader, day/night
 src/client/                 → StarterPlayerScripts.Client
   Main.client.lua
-  UI/ HUD (∞ server card, Doomsday clock, vitals), Inventory+Crafting, Global Shop,
+  UI/ HUD (∞ server card, faction widget, Doomsday clock, vitals), Inventory+Crafting (3D icons), Global Shop,
       Faction panel, World Map, trailer-style Notifications
-  Controllers/ BuildController (ghost placement), ActionController (swing, siege aim, echoes)
+  Controllers/ BuildController (hologram placement), ActionController (swing, siege aim, echoes),
+               WaypointController (red 3D arrows)
 ```
 
 All visuals are built from Parts and UI in code, so you don't need to upload any assets to play it.
@@ -49,7 +52,8 @@ All visuals are built from Parts and UI in code, so you don't need to upload any
    ```
 3. Open a new **Baseplate** in Studio, **delete the Baseplate part** (the world generates its own terrain), and click **Connect** in the Rojo plugin.
 4. **Game Settings → Security → turn on "Enable Studio Access to API Services"** (DataStores/MemoryStores). Without it the game still runs in memory-only mode, but nothing saves.
-5. Press **Play**.
+5. Select **Workspace → Terrain** and tick **Decoration** (animated tall grass). The script tries to turn it on too, but Studio may not allow that from code.
+6. Press **Play**.
 
 To publish: **File → Publish to Roblox**. Then in Game Settings set **Max Players** (50 is a good shard size). Cross-server features (Echoes, shard hopping, live build sync, global market, raid alerts) only work in a **published game with 2+ live servers**. In Studio each test session is its own world-shard.
 

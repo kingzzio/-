@@ -4,7 +4,7 @@
 
 local Items = {}
 
-Items.Categories = { "All", "Tools", "Building", "Resources", "Farming", "Siege", "Food", "Favorites" }
+Items.Categories = { "All", "Tools", "Armor", "Building", "Resources", "Farming", "Siege", "Food", "Favorites" }
 
 Items.Rarity = {
 	Common = Color3.fromRGB(200, 200, 200),
@@ -57,6 +57,17 @@ Items.List = {
 	IronSword = { name = "Iron Sword", category = "Tools", price = 55, rarity = "Rare", color = C(200, 200, 205), tool = { kind = "weapon", tier = 3, power = 30 } },
 	SunBlade = { name = "Sunstone Blade", category = "Tools", price = 220, rarity = "Epic", color = C(255, 130, 40), tool = { kind = "weapon", tier = 4, power = 40, burn = true } },
 	Hammer = { name = "Builder's Hammer", category = "Tools", price = 6, rarity = "Common", color = C(160, 110, 70), buy = 15, tool = { kind = "hammer", tier = 1, power = 0 } },
+
+	-- ARMOR (equip from the inventory; adds max health + shows on your character) --
+	HideHood = { name = "Hide Hood", category = "Armor", price = 6, rarity = "Common", color = C(140, 95, 60), armor = { slot = "head", hp = 15, style = "hood" } },
+	HideTunic = { name = "Hide Tunic", category = "Armor", price = 10, rarity = "Common", color = C(140, 95, 60), armor = { slot = "body", hp = 25, style = "tunic" } },
+	IronHelm = { name = "Iron Helm", category = "Armor", price = 40, rarity = "Uncommon", color = C(190, 192, 200), armor = { slot = "head", hp = 35, style = "helm" } },
+	HornedHelm = { name = "Horned War Helm", category = "Armor", price = 70, rarity = "Rare", color = C(120, 80, 50), armor = { slot = "head", hp = 45, style = "horned" } },
+	IronPlate = { name = "Iron Warplate", category = "Armor", price = 75, rarity = "Rare", color = C(190, 192, 200), armor = { slot = "body", hp = 60, style = "plate" } },
+	GoldenHelm = { name = "Golden Guard Helm", category = "Armor", price = 120, rarity = "Epic", color = C(255, 200, 60), armor = { slot = "head", hp = 55, style = "golden" } },
+	WarlordPlate = { name = "Warlord Plate", category = "Armor", price = 160, rarity = "Epic", color = C(200, 40, 45), armor = { slot = "body", hp = 80, style = "warlord" } },
+	HiveArmor = { name = "Hive Armor", category = "Armor", price = 200, rarity = "Epic", color = C(255, 175, 30), armor = { slot = "body", hp = 95, style = "hive" } },
+	SunstoneCrown = { name = "Sunstone Crown", category = "Armor", price = 380, rarity = "Legendary", color = C(255, 130, 40), armor = { slot = "head", hp = 75, style = "crown" } },
 
 	-- BUILDING (placeables; see Buildables.lua for stats) --------------------
 	ThatchWall = { name = "Thatch Wall", category = "Building", price = 2, rarity = "Common", color = C(200, 180, 100), build = "ThatchWall" },

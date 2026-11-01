@@ -19,7 +19,7 @@ function InventoryService:Sync(player: Player)
 	if not p then
 		return
 	end
-	Remotes.InventoryUpdate:FireClient(player, p.inventory, p.coins, p.favorites)
+	Remotes.InventoryUpdate:FireClient(player, p.inventory, p.coins, p.favorites, p.armor)
 	self:RefreshTools(player)
 end
 

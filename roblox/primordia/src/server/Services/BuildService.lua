@@ -21,6 +21,7 @@ local Items = require(Shared.Items)
 local Buildables = require(Shared.Buildables)
 local WorldGen = require(Shared.WorldGen)
 local Remotes = require(Shared.Remotes)
+local BuildModels = require(Shared.BuildModels)
 
 local BuildService = {}
 local S
@@ -98,18 +99,11 @@ local function addPart(model: Model, size: Vector3, cf: CFrame, color: Color3, m
 end
 
 local function decorate(model: Model, kind: string, main: Part, rec)
-	local cf, size = main.CFrame, main.Size
-	if kind == "HoneycombWall" then
-		local dark = C(200, 120, 20)
-		for i = -1, 1 do
-			addPart(model, Vector3.new(size.X, 0.25, size.Z + 0.1), cf * CFrame.new(0, i * 2.6, 0), dark, Enum.Material.SmoothPlastic, false)
-			addPart(model, Vector3.new(0.25, size.Y, size.Z + 0.1), cf * CFrame.new(i * 2.6, 0, 0), dark, Enum.Material.SmoothPlastic, false)
-		end
-	elseif kind == "Totem" then
+	local size = main.Size
+	BuildModels.Decorate(model, kind, main)
+	if kind == "Totem" then
 		local col = rec.c and Color3.fromHex(rec.c) or C(160, 70, 255)
-		main.Color = col
-		addPart(model, Vector3.new(6, 2, 6), cf * CFrame.new(0, -size.Y / 2 + 1, 0), C(90, 90, 95), Enum.Material.Slate)
-		addPart(model, Vector3.new(0.3, 5, 4), cf * CFrame.new(0, size.Y / 2 - 3, 2.2), col, Enum.Material.Fabric, false)
+		BuildModels.ApplyTrim(model, col)
 		local light = Instance.new("PointLight")
 		light.Color = col
 		light.Range = 40
@@ -117,8 +111,7 @@ local function decorate(model: Model, kind: string, main: Part, rec)
 		light.Parent = main
 		local bb = Instance.new("BillboardGui")
 		bb.Size = UDim2.fromOffset(200, 50)
-		bb.StudsOffset = Vector3.new(0, size.Y / 2 + 3, 0)
-		bb.AlwaysOnTop = false
+		bb.StudsOffset = Vector3.new(0, size.Y / 2 + 5, 0)
 		bb.MaxDistance = 400
 		local t = Instance.new("TextLabel")
 		t.BackgroundTransparency = 1
@@ -130,52 +123,20 @@ local function decorate(model: Model, kind: string, main: Part, rec)
 		t.Text = "[" .. (rec.tag or "???") .. "]"
 		t.Parent = bb
 		bb.Parent = main
-	elseif kind == "Forge" then
-		local fire = Instance.new("Fire")
-		fire.Heat = 4
-		fire.Size = 4
-		fire.Parent = main
-	elseif kind == "Catapult" then
-		addPart(model, Vector3.new(0.8, 0.8, 9), cf * CFrame.new(0, size.Y / 2 + 1, 0) * CFrame.Angles(math.rad(-25), 0, 0), C(110, 75, 45), Enum.Material.Wood, false).Name = "Arm"
-		addPart(model, Vector3.new(2, 1, 2), cf * CFrame.new(0, size.Y / 2 + 2.8, 4), C(80, 55, 35), Enum.Material.Wood, false).Name = "Bucket"
-	elseif kind == "Ballista" then
-		addPart(model, Vector3.new(8, 0.5, 0.5), cf * CFrame.new(0, size.Y / 2 + 0.5, -2), C(110, 75, 45), Enum.Material.Wood, false)
-		addPart(model, Vector3.new(0.4, 0.4, 7), cf * CFrame.new(0, size.Y / 2 + 0.7, 0), C(170, 170, 180), Enum.Material.Metal, false)
-	elseif kind == "Ram" then
-		addPart(model, Vector3.new(size.X + 1, 0.6, size.Z - 2), cf * CFrame.new(0, size.Y / 2 + 1, 0), C(140, 100, 60), Enum.Material.WoodPlanks, false)
-		addPart(model, Vector3.new(1.8, 1.8, 2), cf * CFrame.new(0, 0, -size.Z / 2 - 0.6), C(90, 90, 95), Enum.Material.Metal, false)
-	elseif kind == "Sprinkler" then
-		local pe = Instance.new("ParticleEmitter")
-		pe.Color = ColorSequence.new(C(120, 190, 255))
-		pe.Size = NumberSequence.new(0.25)
-		pe.Rate = 25
-		pe.Speed = NumberRange.new(10)
-		pe.SpreadAngle = Vector2.new(60, 180)
-		pe.Acceleration = Vector3.new(0, -30, 0)
-		pe.Lifetime = NumberRange.new(0.8)
-		pe.Parent = main
-	elseif kind == "Beehive" then
-		local pe = Instance.new("ParticleEmitter")
-		pe.Color = ColorSequence.new(C(255, 220, 40))
-		pe.Size = NumberSequence.new(0.18)
-		pe.Rate = 8
-		pe.Speed = NumberRange.new(2)
-		pe.SpreadAngle = Vector2.new(180, 180)
-		pe.Parent = main
-	elseif kind == "Watchtower" then
-		addPart(model, Vector3.new(10, 1, 10), cf * CFrame.new(0, size.Y / 2, 0), C(170, 120, 75), Enum.Material.WoodPlanks)
-	elseif kind == "Spikes" then
-		for i = -1, 1 do
-			for j = -1, 1 do
-				addPart(model, Vector3.new(0.4, 2, 0.4), cf * CFrame.new(i * 2.5, 1, j * 2.5), C(200, 200, 200), Enum.Material.Metal, false)
+	elseif rec.f then
+		-- paint trims in the owner's faction colour (looked up off-thread)
+		task.spawn(function()
+			local info = S.FactionService:Info(rec.f)
+			if info and info.color and model.Parent then
+				BuildModels.ApplyTrim(model, Color3.fromHex(info.color))
 			end
-		end
+		end)
 	end
 	if kind == "Harvester" or kind == "MarketCart" or kind == "Beehive" then
 		local bb = Instance.new("BillboardGui")
 		bb.Name = "Status"
 		bb.Size = UDim2.fromOffset(180, 40)
-		bb.StudsOffset = Vector3.new(0, size.Y / 2 + 2, 0)
+		bb.StudsOffset = Vector3.new(0, size.Y / 2 + 2.5, 0)
 		bb.MaxDistance = 80
 		local t = Instance.new("TextLabel")
 		t.Name = "Label"
@@ -251,8 +212,15 @@ local function removeLocal(id: string, effect: boolean?)
 		for _ = 1, 6 do
 			local d = Instance.new("Part")
 			d.Size = Vector3.new(1.2, 1.2, 1.2)
-			d.Color = b.model.PrimaryPart.Color
-			d.Material = b.model.PrimaryPart.Material
+			local sample = b.model:FindFirstChildWhichIsA("BasePart", true)
+			for _, part in b.model:GetChildren() do
+				if part:IsA("BasePart") and part.Transparency < 1 then
+					sample = part
+					break
+				end
+			end
+			d.Color = sample.Color
+			d.Material = sample.Material
 			d.CFrame = b.model.PrimaryPart.CFrame * CFrame.new(math.random(-3, 3), math.random(0, 3), math.random(-1, 1))
 			d.AssemblyLinearVelocity = Vector3.new(math.random(-25, 25), math.random(15, 35), math.random(-25, 25))
 			d.CanCollide = true
@@ -625,7 +593,11 @@ local function attachBehaviour(model: Model, rec)
 				return
 			end
 			open = not open
-			main.Transparency = open and 0.7 or 0
+			for _, part in model:GetDescendants() do
+				if part:IsA("BasePart") and part ~= main then
+					part.Transparency = open and 0.75 or 0
+				end
+			end
 			main.CanCollide = not open
 			prompt.ActionText = open and "Close" or "Open"
 		end)

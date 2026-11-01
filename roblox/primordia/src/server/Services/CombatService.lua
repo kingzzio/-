@@ -101,7 +101,7 @@ local function dropSatchel(victim: Player, pos: Vector3)
 	local loot = {}
 	for id, n in profile.inventory do
 		local def = Items.Get(id)
-		if def and not def.tool and n > 0 then
+		if def and not def.tool and not def.armor and n > 0 then
 			local take = math.floor(n * 0.3)
 			if take > 0 then
 				loot[id] = take

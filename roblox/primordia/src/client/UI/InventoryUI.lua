@@ -8,6 +8,7 @@ local Recipes = require(Shared.Recipes)
 local Remotes = require(Shared.Remotes)
 local Theme = require(script.Parent.Theme)
 local State = require(script.Parent.State)
+local ItemIcon = require(script.Parent.ItemIcon)
 local New = Theme.New
 local C = Theme.Colors
 
@@ -24,6 +25,11 @@ local root = Theme.Card({
 	Parent = gui,
 })
 New("UISizeConstraint", { MaxSize = Vector2.new(640, 560), Parent = root })
+New("UIGradient", {
+	Color = ColorSequence.new(Color3.fromRGB(150, 210, 255), Color3.fromRGB(70, 140, 220)),
+	Rotation = 90,
+	Parent = root,
+})
 
 local tabsBar = New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(12, 10), Size = UDim2.new(1, -70, 0, 40), Parent = root }, {
 	New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6) }),
@@ -53,7 +59,7 @@ local actions = New("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2
 	New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, Padding = UDim.new(0, 6) }),
 })
 
-local TAB_ICONS = { All = "All", Tools = "⛏", Building = "🧱", Resources = "🪵", Farming = "🌾", Siege = "💣", Food = "🍞", Favorites = "★", Craft = "⚒ Craft" }
+local TAB_ICONS = { All = "All", Tools = "⛏", Armor = "🛡", Building = "🧱", Resources = "🪵", Farming = "🌾", Siege = "💣", Food = "🍞", Favorites = "★", Craft = "⚒ Craft" }
 local currentTab = "All"
 local selected: string? = nil
 local tabButtons = {}
@@ -67,18 +73,23 @@ local function itemTile(id: string, count: number?, onClick)
 		BorderSizePixel = 0,
 		Parent = grid,
 	}, { Theme.Corner(10), New("UIStroke", { Color = Items.Rarity[def.rarity] or C.Stroke, Thickness = selected == id and 4 or 2 }) })
-	-- simple 3D-ish block icon: the item's colour as a bevelled cube
-	New("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = UDim2.fromOffset(44, 44), BackgroundColor3 = def.color, Rotation = 0, Parent = tile }, {
-		Theme.Corner(8),
-		New("UIGradient", { Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(150, 150, 150)), Rotation = 60 }),
-	})
+	local icon = ItemIcon.new(id, tile, UDim2.fromOffset(62, 58))
+	icon.AnchorPoint = Vector2.new(0.5, 0.5)
+	icon.Position = UDim2.fromScale(0.5, 0.4)
+	if def.armor then
+		for _, worn in State.armor do
+			if worn == id then
+				Theme.Label("WORN", { Position = UDim2.fromOffset(6, 4), Size = UDim2.fromOffset(40, 14), TextSize = 10, TextColor3 = Color3.fromRGB(40, 150, 60), Parent = tile })
+			end
+		end
+	end
 	if count then
-		Theme.Label(Theme.FormatNumber(count), { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -6, 1, -4), Size = UDim2.fromOffset(60, 16), TextXAlignment = Enum.TextXAlignment.Right, TextSize = 13, TextColor3 = Color3.fromRGB(40, 40, 50), Parent = tile })
+		Theme.Label(Theme.FormatNumber(count), { AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 6, 1, -3), Size = UDim2.fromOffset(60, 16), Font = Theme.FontHeavy, TextSize = 14, TextColor3 = Color3.fromRGB(40, 40, 50), Parent = tile })
 	end
 	if State.favorites[id] then
-		Theme.Label("★", { Position = UDim2.fromOffset(6, 2), Size = UDim2.fromOffset(20, 20), TextColor3 = C.Gold, TextSize = 18, Parent = tile })
+		Theme.Label("★", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -4, 0, 2), Size = UDim2.fromOffset(20, 20), TextColor3 = C.Gold, TextStrokeTransparency = 0.5, TextSize = 18, Parent = tile })
 	end
-	Theme.Label(def.name, { Position = UDim2.new(0, 4, 1, -34), Size = UDim2.new(1, -8, 0, 14), TextXAlignment = Enum.TextXAlignment.Center, TextSize = 10, TextColor3 = Color3.fromRGB(60, 60, 70), TextTruncate = Enum.TextTruncate.AtEnd, Parent = tile })
+	Theme.Label(def.name, { Position = UDim2.new(0, 4, 1, -32), Size = UDim2.new(1, -8, 0, 12), TextXAlignment = Enum.TextXAlignment.Center, TextSize = 10, TextColor3 = Color3.fromRGB(60, 60, 70), TextTruncate = Enum.TextTruncate.AtEnd, Parent = tile })
 	tile.MouseButton1Click:Connect(onClick)
 	return tile
 end
@@ -111,13 +122,19 @@ local function showItemActions(id: string)
 	local def = Items.Get(id)
 	dName.Text = def.name
 	dName.TextColor3 = Items.Rarity[def.rarity] or C.Text
-	dInfo.Text = def.rarity .. " · " .. def.category .. (def.price and def.price > 0 and (" · sells ~" .. def.price .. "c") or "") .. (def.tool and (" · tier " .. def.tool.tier .. " " .. def.tool.kind) or "")
+	dInfo.Text = def.rarity .. " · " .. def.category .. (def.price and def.price > 0 and (" · sells ~" .. def.price .. "c") or "") .. (def.tool and (" · tier " .. def.tool.tier .. " " .. def.tool.kind) or "") .. (def.armor and (" · +" .. def.armor.hp .. " max HP (" .. def.armor.slot .. ")") or "")
 	if def.build then
 		Theme.Button("Place (B)", C.Blue, { Size = UDim2.fromOffset(100, 40), Parent = actions }).MouseButton1Click:Connect(function()
 			State.OpenPanel(nil)
 			if InventoryUI.OnPlace then
 				InventoryUI.OnPlace(id)
 			end
+		end)
+	end
+	if def.armor then
+		local worn = State.armor[def.armor.slot] == id
+		Theme.Button(worn and "Unequip" or "Equip", worn and C.CardLight or C.Accent, { Size = UDim2.fromOffset(96, 40), TextColor3 = worn and Color3.new(1, 1, 1) or Color3.new(0, 0, 0), Parent = actions }).MouseButton1Click:Connect(function()
+			Remotes.EquipArmor:FireServer(id)
 		end)
 	end
 	if def.food or def.heal then

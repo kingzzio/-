@@ -8,6 +8,7 @@ local Config = require(Shared.Config)
 local Items = require(Shared.Items)
 local Buildables = require(Shared.Buildables)
 local Remotes = require(Shared.Remotes)
+local BuildModels = require(Shared.BuildModels)
 local UI = script.Parent.Parent:WaitForChild("UI")
 local Theme = require(UI.Theme)
 local State = require(UI.State)
@@ -16,7 +17,9 @@ local BuildController = {}
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
-local ghost: Part? = nil
+local ghost: Part? = nil -- invisible anchor; the preview model hangs off it
+local ghostModel: Model? = nil
+local ghostOffsets: { [BasePart]: CFrame } = {}
 local currentItem: string? = nil
 local lastItem: string? = nil
 local rotation = 0
@@ -56,6 +59,11 @@ function BuildController.Stop()
 		ghost:Destroy()
 		ghost = nil
 	end
+	if ghostModel then
+		ghostModel:Destroy()
+		ghostModel = nil
+	end
+	ghostOffsets = {}
 	currentItem = nil
 	hint.Visible = false
 end
@@ -82,6 +90,33 @@ function BuildController.Start(itemId: string)
 	g.Transparency = 0.2
 	g.Parent = workspace
 	ghost = g
+	-- full detailed preview of the real build
+	local preview = Instance.new("Model")
+	preview.Name = "BuildPreview"
+	local main = g:Clone()
+	main.Parent = preview
+	main.CFrame = CFrame.new()
+	BuildModels.Decorate(preview, item.build, main)
+	for _, p in preview:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.CanCollide = false
+			p.CanQuery = false
+			p.CanTouch = false
+			p.Anchored = true
+			p.CastShadow = false
+			p.Material = Enum.Material.ForceField
+			ghostOffsets[p] = p.CFrame
+		elseif p:IsA("ParticleEmitter") or p:IsA("Fire") or p:IsA("Smoke") or p:IsA("Sparkles") or p:IsA("Light") then
+			p:Destroy()
+		end
+	end
+	if main.Transparency >= 1 then
+		g.Transparency = 0.85
+	end
+	ghostOffsets[main] = nil
+	main:Destroy()
+	preview.Parent = workspace
+	ghostModel = preview
 	hint.Visible = true
 
 	local params = RaycastParams.new()
@@ -93,7 +128,7 @@ function BuildController.Start(itemId: string)
 		if not root or not ghost then
 			return
 		end
-		params.FilterDescendantsInstances = { char, ghost }
+		params.FilterDescendantsInstances = { char, ghost, ghostModel }
 		local mpos = UserInputService:GetMouseLocation()
 		local ray = camera:ViewportPointToRay(mpos.X, mpos.Y)
 		local hit = workspace:Raycast(ray.Origin, ray.Direction * 200, params)
@@ -108,7 +143,12 @@ function BuildController.Start(itemId: string)
 		local claim = claimAt(pos)
 		local blocked = claim and claim.faction ~= player:GetAttribute("Faction") and def.kind ~= "siege"
 		valid = dist <= Config.BuildReach and not blocked
-		ghost.Color = valid and Color3.fromRGB(100, 255, 120) or Color3.fromRGB(255, 70, 70)
+		local tint = valid and Color3.fromRGB(100, 255, 120) or Color3.fromRGB(255, 70, 70)
+		ghost.Color = tint
+		for p, offset in ghostOffsets do
+			p.CFrame = ghost.CFrame * offset
+			p.Color = tint
+		end
 		local why = dist > Config.BuildReach and "too far" or (blocked and ("claimed by [" .. claim.tag .. "]") or "")
 		hint.Text = item.name .. " ×" .. (State.inventory[itemId] or 0) .. "   ·   Click place · R rotate · Q cancel" .. (why ~= "" and ("   ·   " .. why) or "")
 		hint.TextColor3 = valid and Color3.new(1, 1, 1) or Color3.fromRGB(255, 140, 140)

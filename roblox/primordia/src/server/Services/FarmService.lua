@@ -42,6 +42,31 @@ local function progress(rec, model: Model): number
 	return math.clamp((os.time() - d.p) * growthMult(model) / crop.grow, 0, 1)
 end
 
+-- Each plot shows a 4x3 grid of plants that physically grow, then fruit when ripe.
+local FRUIT = {
+	Wheat = { shape = "ear", color = Color3.fromRGB(240, 205, 90) },
+	Berry = { shape = "bush", color = Color3.fromRGB(95, 60, 185) },
+	Beet = { shape = "root", color = Color3.fromRGB(165, 30, 75) },
+	Pumpkin = { shape = "gourd", color = Color3.fromRGB(245, 140, 35) },
+	Sunbloom = { shape = "flower", color = Color3.fromRGB(255, 220, 60) },
+}
+
+local function cropPart(parent, size, cf, color, material, shape)
+	local p = Instance.new("Part")
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = material
+	if shape then
+		p.Shape = shape
+	end
+	p.Parent = parent
+	return p
+end
+
 local function updateCropVisual(model: Model, rec)
 	local main = model.PrimaryPart
 	local crop = model:FindFirstChild("Crop")
@@ -50,23 +75,67 @@ local function updateCropVisual(model: Model, rec)
 		if crop then
 			crop:Destroy()
 		end
+		model:SetAttribute("Ripe", false)
 		return
 	end
 	local pct = progress(rec, model)
-	if not crop then
-		crop = Instance.new("Part")
-		crop.Name = "Crop"
-		crop.Anchored = true
-		crop.CanCollide = false
-		crop.Material = Enum.Material.Grass
-		crop.Parent = model
+	local ripe = pct >= 1
+	local stage = ripe and 4 or math.floor(pct * 4)
+	if crop and crop:GetAttribute("Stage") == stage and crop:GetAttribute("Crop") == d.c then
+		return
 	end
-	local h = 0.4 + pct * 3.2
-	crop.Size = Vector3.new(6.5, h, 6.5)
-	crop.CFrame = main.CFrame * CFrame.new(0, main.Size.Y / 2 + h / 2, 0)
-	crop.Color = pct >= 1 and Crops[d.c].color or Color3.fromRGB(90, 170, 70):Lerp(Crops[d.c].color, pct * 0.6)
-	crop.Material = pct >= 1 and Enum.Material.SmoothPlastic or Enum.Material.Grass
-	model:SetAttribute("Ripe", pct >= 1)
+	if crop then
+		crop:Destroy()
+	end
+	crop = Instance.new("Model")
+	crop.Name = "Crop"
+	crop:SetAttribute("Stage", stage)
+	crop:SetAttribute("Crop", d.c)
+	crop.Parent = model
+	local fruit = FRUIT[d.c] or FRUIT.Wheat
+	local green = Color3.fromRGB(80, 165, 60)
+	local top = main.CFrame * CFrame.new(0, main.Size.Y / 2, 0)
+	local h = 0.4 + (stage / 4) * (fruit.shape == "ear" and 3.2 or 2.2)
+	for i = 0, 3 do
+		for j = -1, 1 do
+			local base = top * CFrame.new(-2.7 + i * 1.8, 0, j * 2.6) * CFrame.Angles(0, (i * 3 + j) * 0.7, 0)
+			if fruit.shape == "ear" then
+				for k = -1, 1 do
+					local stalk = cropPart(crop, Vector3.new(0.2, h, 0.2), base * CFrame.new(k * 0.35, h / 2, 0) * CFrame.Angles(0, 0, k * 0.12), ripe and Color3.fromRGB(205, 175, 80) or green, Enum.Material.Grass)
+					if ripe then
+						cropPart(crop, Vector3.new(0.35, 0.9, 0.35), stalk.CFrame * CFrame.new(0, h / 2 + 0.3, 0), fruit.color, Enum.Material.Grass)
+					end
+				end
+			elseif fruit.shape == "bush" then
+				local s = 0.6 + stage * 0.35
+				cropPart(crop, Vector3.new(s, s, s), base * CFrame.new(0, s / 2, 0), Color3.fromRGB(50, 120, 55), Enum.Material.Grass, Enum.PartType.Ball)
+				if ripe then
+					for k = 0, 3 do
+						cropPart(crop, Vector3.new(0.4, 0.4, 0.4), base * CFrame.Angles(0, k * 1.57, 0) * CFrame.new(s * 0.45, s * 0.6, 0), fruit.color, Enum.Material.SmoothPlastic, Enum.PartType.Ball)
+					end
+				end
+			else
+				for k = -1, 1, 2 do
+					cropPart(crop, Vector3.new(0.15, 0.5 + stage * 0.3, 0.7), base * CFrame.new(k * 0.25, 0.4 + stage * 0.15, 0) * CFrame.Angles(0, 0, k * 0.5), green, Enum.Material.Grass)
+				end
+				if fruit.shape == "flower" then
+					local stem = cropPart(crop, Vector3.new(0.18, h + 0.6, 0.18), base * CFrame.new(0, (h + 0.6) / 2, 0), green, Enum.Material.Grass)
+					if ripe then
+						cropPart(crop, Vector3.new(0.25, 1.4, 1.4), stem.CFrame * CFrame.new(0, (h + 0.6) / 2, 0) * CFrame.Angles(0, 0, math.pi / 2), fruit.color, Enum.Material.Neon, Enum.PartType.Cylinder)
+					end
+				elseif ripe then
+					local size = fruit.shape == "gourd" and 1.5 or 0.8
+					cropPart(crop, Vector3.new(size, size * 0.85, size), base * CFrame.new(0, size * 0.3, 0), fruit.color, Enum.Material.SmoothPlastic, Enum.PartType.Ball)
+				end
+			end
+		end
+	end
+	if ripe then
+		local sparkle = Instance.new("Sparkles")
+		sparkle.SparkleColor = fruit.color
+		sparkle.Parent = crop:FindFirstChildWhichIsA("BasePart")
+	end
+	model:SetAttribute("Ripe", ripe)
 end
 
 local function harvestPlot(model: Model, rec, give: (string, number) -> ())

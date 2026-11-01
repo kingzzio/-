@@ -38,6 +38,28 @@ Every line of the narration and every UI shown, mapped to a system (✅ = in the
 
 ---
 
+## 1b. Look & feel — matched to the trailer, then pushed further
+
+| Trailer visual | PRIMORDIA version | Better because |
+|---|---|---|
+| Wooden fort palisades | **Palisade walls**: sharpened logs, back braces, faction pennant | Every tier has its own silhouette, so raiders can read your defences at a glance |
+| Purple stone compound walls | **Stone walls**: offset brick courses, crenellations, a **trim band in your faction colour** | Any colour, not just purple. Trims recolour across iron gates, totems, towers and siege machines |
+| — | **Iron walls** (riveted plates, top spikes) and **Honeycomb walls** (real hexagon cells) | Visible tier ladder |
+| Catapults in the field | Catapult on 4 wheels with A-frame, axle, throwing arm, bucket and counterweight. Ballista with bow and string. Covered battering ram with iron-capped log | — |
+| Big crop fields | Fenced plots with **4×3 plants that physically grow** through 4 stages and fruit when ripe (golden wheat ears, purple berry bushes, pumpkins, sunbloom flowers), with sparkles when ready | You can see what's ripe from a distance |
+| Wooden towers | **Watchtower** with climbable ladder, railed platform and faction-coloured roof | — |
+| Red down-arrows | **3D bobbing red arrows** with white outline over loot, supply drops, meteors, traders and your home totem, with distance labels | They point to things that are actually useful |
+| Horned helmets, gold helms, red armour | **Armour sets** shown on your character: Horned War Helm, Golden Guard Helm (barred face guard and crest), Warlord Plate (red and gold with shoulder pads and backpack), Iron Warplate, Hive Armor, glowing Sunstone Crown | Armour adds max HP, so looks equal progress |
+| Tall grass, bright colours | Animated terrain grass, atmosphere haze, bloom, sun rays and a saturation boost | — |
+| Server card (avatar grid, "+N", Join/Share, ID) | Same layout, but "13,427 of ∞ people" with a never-filling shimmer bar. Join opens the map to hop shards | — |
+| FACTION member wall | Always-on faction widget under the server card: banner badge, "N members · N on", avatar grid with names, gold ring on the Chief, faded offline members | — |
+| Inventory with block icons | **3D model icons** for every item (logs, ingots, gems, tools, helmets, walls), sky-blue panel, bold counts, gold ★, an Armor tab with Equip | — |
+| Wooden GLOBAL SHOP | Same wooden look with 3D icons and live cross-server price trends | — |
+| DOOMSDAY pixel box | Double pixel frame, pulsing title, centisecond timer synced to server time | — |
+| — | **Build preview shows the real model** as a green/red hologram before you place it | — |
+
+---
+
 ## 2. Core loops
 
 **Minute-to-minute.** Punch trees and rocks, then craft stone tools and gather faster. Every hit drops a little; finishing a node pays the bonus roll.

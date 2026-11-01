@@ -11,6 +11,7 @@ local EVENTS = {
 	"Craft", -- (recipeIndex)
 	"ToggleFavorite", -- (itemId)
 	"EatItem", -- (itemId)
+	"EquipArmor", -- (itemId) toggles
 	"PlaceBuild", -- (itemId, cframe)
 	"Swing", -- ()
 	"FireSiege", -- (machineId, targetPosition)

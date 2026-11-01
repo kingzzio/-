@@ -6,6 +6,7 @@ local Items = require(Shared.Items)
 local Remotes = require(Shared.Remotes)
 local Theme = require(script.Parent.Theme)
 local State = require(script.Parent.State)
+local ItemIcon = require(script.Parent.ItemIcon)
 local New = Theme.New
 local C = Theme.Colors
 
@@ -62,7 +63,8 @@ local buyList = column("BUY", 0.5)
 
 local function row(parent, def, text: string, sub: string, subColor: Color3)
 	local r = New("Frame", { Size = UDim2.new(1, -4, 0, 50), BackgroundColor3 = Color3.fromRGB(240, 235, 210), Parent = parent }, { Theme.Corner(8) })
-	New("Frame", { Position = UDim2.fromOffset(8, 9), Size = UDim2.fromOffset(32, 32), BackgroundColor3 = def.color, Parent = r }, { Theme.Corner(6) })
+	local icon = ItemIcon.new(def.id, r, UDim2.fromOffset(42, 42))
+	icon.Position = UDim2.fromOffset(4, 4)
 	Theme.Label(text, { Position = UDim2.fromOffset(48, 5), Size = UDim2.new(1, -170, 0, 20), TextColor3 = Color3.fromRGB(50, 50, 40), TextSize = 14, TextTruncate = Enum.TextTruncate.AtEnd, Parent = r })
 	Theme.Label(sub, { Position = UDim2.fromOffset(48, 25), Size = UDim2.new(1, -170, 0, 18), TextColor3 = subColor, TextSize = 12, Parent = r })
 	return r

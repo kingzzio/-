@@ -11,6 +11,7 @@ local ORDER = {
 	"FactionService",
 	"HarvestService",
 	"CombatService",
+	"ArmorService",
 	"SiegeService",
 	"FarmService",
 	"ShopService",

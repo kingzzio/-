@@ -23,6 +23,7 @@ local function defaultProfile()
 		coins = Config.StartingCoins,
 		inventory = { Hammer = 1, Fiber = 4, WheatSeed = 3 },
 		favorites = {},
+		armor = {},
 		faction = nil,
 		hunger = 100,
 		lastPos = nil,

@@ -404,11 +404,38 @@ function WorldService:Init(services)
 	self.NodesFolder = nodesFolder
 	self.WorldFolder = worldFolder
 
+	-- Bright, saturated "toy world" look: tall animated grass, soft haze, sun rays.
+	pcall(function()
+		Terrain.Decoration = true
+	end)
+	local Lighting = game:GetService("Lighting")
+	Lighting.EnvironmentDiffuseScale = 0.6
+	Lighting.EnvironmentSpecularScale = 0.4
+	local function fx(class, props)
+		local e = Lighting:FindFirstChildOfClass(class) or Instance.new(class)
+		for k, v in props do
+			e[k] = v
+		end
+		e.Parent = Lighting
+	end
+	fx("Atmosphere", { Density = 0.28, Offset = 0.1, Haze = 1.2, Glare = 0.4, Color = Color3.fromRGB(200, 225, 255), Decay = Color3.fromRGB(120, 150, 190) })
+	fx("BloomEffect", { Intensity = 0.35, Size = 28, Threshold = 1.6 })
+	fx("SunRaysEffect", { Intensity = 0.08, Spread = 0.8 })
+	fx("ColorCorrectionEffect", { Saturation = 0.18, Contrast = 0.06, Brightness = 0.02 })
+	fx("DepthOfFieldEffect", { FarIntensity = 0.12, FocusDistance = 120, InFocusRadius = 150, NearIntensity = 0 })
+	if not Lighting:FindFirstChildOfClass("Sky") then
+		local sky = Instance.new("Sky")
+		sky.SunAngularSize = 14
+		sky.MoonAngularSize = 9
+		sky.Parent = Lighting
+	end
 	Terrain.WaterColor = Color3.fromRGB(60, 170, 200)
 	Terrain.WaterTransparency = 0.6
 	Terrain.WaterWaveSize = 0.15
 	Terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(110, 190, 70))
 	Terrain:SetMaterialColor(Enum.Material.LeafyGrass, Color3.fromRGB(70, 150, 60))
+	Terrain:SetMaterialColor(Enum.Material.Mud, Color3.fromRGB(95, 85, 60))
+	Terrain:SetMaterialColor(Enum.Material.Sand, Color3.fromRGB(235, 215, 150))
 
 	-- a fallback SpawnLocation so Roblox never drops players into the void
 	local spawnPos = self:FindLand(nil, 200)
