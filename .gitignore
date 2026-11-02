@@ -4,3 +4,6 @@ node_modules
 .DS_Store
 data/
 public/dist/
+
+# generated Roblox place files (build with roblox/primordia/tools/build_place.py)
+*.rbxlx
