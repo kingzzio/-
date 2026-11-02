@@ -15,21 +15,22 @@ local FactionUI = {}
 local player = Players.LocalPlayer
 
 local gui = Theme.Screen("Faction", 12)
-local root = Theme.Card({
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.52),
-	Size = UDim2.new(0, 560, 0.74, 0),
-	BackgroundTransparency = 0.08,
-	Visible = false,
-	Parent = gui,
+local win = Theme.Window({
+	title = "Faction",
+	icon = "🛡",
+	color = Color3.fromRGB(170, 70, 255),
+	body = Color3.fromRGB(110, 60, 190),
+	size = UDim2.new(0, 600, 0.8, 0),
+	maxSize = Vector2.new(600, 620),
+	parent = gui,
+	onClose = function()
+		State.OpenPanel(nil)
+	end,
 })
-New("UISizeConstraint", { MaxSize = Vector2.new(560, 600), Parent = root })
-Theme.Button("X", C.Red, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 10), Size = UDim2.fromOffset(36, 36), Parent = root }).MouseButton1Click:Connect(function()
-	State.OpenPanel(nil)
-end)
+local root = win.content
 local body = New("ScrollingFrame", {
-	Position = UDim2.fromOffset(14, 14),
-	Size = UDim2.new(1, -28, 1, -28),
+	Position = UDim2.fromOffset(16, 18),
+	Size = UDim2.new(1, -32, 1, -30),
 	BackgroundTransparency = 1,
 	BorderSizePixel = 0,
 	ScrollBarThickness = 5,
@@ -242,13 +243,15 @@ function FactionUI.Init()
 		State.Set("factionColors", colors or State.factionColors)
 		State.Set("invites", invites or {})
 		State.Set("faction", info)
-		if root.Visible then
+		if win:IsVisible() then
 			render()
 		end
 	end)
 	State.On("openPanel", function(name)
-		root.Visible = name == "Faction"
-		if root.Visible then
+		task.spawn(function()
+			win:SetVisible(name == "Faction")
+		end)
+		if name == "Faction" then
 			act("refresh")
 			render()
 		end

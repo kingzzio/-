@@ -60,6 +60,15 @@ Every line of the narration and every UI shown, mapped to a system (✅ = in the
 
 ---
 
+## 1c. Art direction v2: voxel world and simulator UI
+
+Based on the user's reference videos (voxel "Catch an Egg" style worlds, neon mine worlds, chunky simulator UI):
+
+- **World:** studded 4×4 voxel blocks stepping in 2-stud terraces, bright two-tone biome palettes, glowing lava blocks in the Ashlands, real swimmable water. Cube-canopy trees, snowy pine tiers, red Ember trees, blocky rocks, glowing gem blocks with floating name and rarity tags.
+- **Spawn Plaza (safe zone):** round studded plaza with four sand paths, lanterns, a spinning crystal monument, fenced pens, a ring of voxel trees, and striped market stalls (Global Shop, Crafting Hall, Siege Workshop, Faction Hall). The hall stations work for everyone.
+- **UI kit:** every window has a glossy studded body, a gradient header with a big outlined title and icon, a red square X, and a pop-in animation. Items show as rarity cards with rotating sunburst rays and 3D models. Buttons are chunky and bounce. Pill badges and "- Section -" headings.
+- **HUD:** left menu of big square buttons (Shop, Bag, Craft, Clan, Map, Build), a numbered 1–9 hotbar with 3D tool icons, and a "NOW ENTERING ___" title when you walk into a new biome.
+
 ## 2. Core loops
 
 **Minute-to-minute.** Punch trees and rocks, then craft stone tools and gather faster. Every hit drops a little; finishing a node pays the bonus roll.

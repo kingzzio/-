@@ -37,7 +37,7 @@ local function groundNear(center: Vector3, minR: number, maxR: number): Vector3
 	local a = math.random() * math.pi * 2
 	local r = minR + math.random() * (maxR - minR)
 	local x, z = center.X + math.cos(a) * r, center.Z + math.sin(a) * r
-	return Vector3.new(x, WorldGen.Sample(x, z), z)
+	return Vector3.new(x, WorldGen.Ground(x, z), z)
 end
 
 local function compass(from: Vector3, to: Vector3): string

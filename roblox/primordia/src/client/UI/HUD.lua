@@ -304,7 +304,7 @@ local function buildVitals()
 		foodLabel.Text = "🍖 " .. math.floor(hunger)
 	end)
 
-	Theme.Label("G Inventory · C Craft · F Faction · M Map · B Build · Tab Server", {
+	Theme.Label("1-9 Tools · G Bag · C Craft · F Clan · M Map · B Build · Tab Server", {
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.new(1, -16, 1, -12),
 		Size = UDim2.fromOffset(460, 18),

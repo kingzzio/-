@@ -8,6 +8,7 @@ Nodes.List = {
 	Tree = { hp = 60, tool = "axe", minTier = 0, drops = { { "Wood", 3, 5 }, { "Leaf", 0, 3 } }, color = C(80, 150, 60) },
 	PineTree = { hp = 70, tool = "axe", minTier = 0, drops = { { "Wood", 4, 6 }, { "Leaf", 0, 2 } }, color = C(40, 110, 70) },
 	PalmTree = { hp = 50, tool = "axe", minTier = 0, drops = { { "Wood", 2, 4 }, { "Fiber", 1, 3 } }, color = C(110, 170, 70) },
+	EmberTree = { hp = 70, tool = "axe", minTier = 0, drops = { { "Wood", 3, 5 }, { "Obsidian", 0, 1, 0.08 } }, color = C(220, 60, 40) },
 	DeadTree = { hp = 40, tool = "axe", minTier = 0, drops = { { "Wood", 2, 3 }, { "Hide", 0, 1, 0.2 } }, color = C(90, 80, 70) },
 	Cactus = { hp = 30, tool = "axe", minTier = 0, drops = { { "Fiber", 2, 4 }, { "Berry", 0, 1, 0.3 } }, color = C(70, 150, 70) },
 	Rock = { hp = 80, tool = "pick", minTier = 0, drops = { { "Stone", 3, 6 }, { "Clay", 0, 1, 0.25 } }, color = C(125, 125, 130) },

@@ -103,7 +103,7 @@ local function aimPoint(): Vector3?
 	local t = (Config.SeaLevel - ray.Origin.Y) / ray.Direction.Y
 	if t > 0 then
 		local p = ray.Origin + ray.Direction * t
-		return Vector3.new(p.X, WorldGen.Sample(p.X, p.Z), p.Z)
+		return Vector3.new(p.X, WorldGen.Ground(p.X, p.Z), p.Z)
 	end
 	return nil
 end
@@ -180,7 +180,7 @@ local function updateEchoes(list)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local seen = {}
 	for _, e in list do
-		local y = WorldGen.Sample(e.x, e.z)
+		local y = WorldGen.Ground(e.x, e.z)
 		local pos = Vector3.new(e.x, y, e.z)
 		local near = root and (pos - root.Position).Magnitude < Config.EchoRenderDistance
 		if near then

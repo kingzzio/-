@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
+local WorldGen = require(Shared.WorldGen)
 
 local DoomsdayService = {}
 local S
@@ -46,6 +47,10 @@ function DoomsdayService:PvPAllowed(a: Player, b: Player): boolean
 	local fa, fb = a:GetAttribute("Faction"), b:GetAttribute("Faction")
 	if fa and fa == fb then
 		return false -- no friendly fire, ever
+	end
+	local vr = b.Character and b.Character:FindFirstChild("HumanoidRootPart")
+	if vr and WorldGen.InHub(vr.Position, 10) then
+		return false -- the hub is always safe
 	end
 	if self:IsAnarchy() or ReplicatedStorage:GetAttribute("BloodMoon") then
 		return true

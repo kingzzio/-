@@ -108,41 +108,6 @@ function ShopService:Prices()
 	return { sell = list, buy = buy, boost = boost() }
 end
 
-local function makeStall(pos: Vector3)
-	local m = Instance.new("Model")
-	m.Name = "Global Shop"
-	local function p(size, cf, color, mat)
-		local x = Instance.new("Part")
-		x.Anchored = true
-		x.Size = size
-		x.CFrame = cf
-		x.Color = color
-		x.Material = mat
-		x.Parent = m
-		return x
-	end
-	local base = CFrame.new(pos)
-	local counter = p(Vector3.new(12, 3.5, 4), base * CFrame.new(0, 1.75, 0), Color3.fromRGB(150, 105, 60), Enum.Material.WoodPlanks)
-	p(Vector3.new(1, 10, 1), base * CFrame.new(-5.5, 5, 1.5), Color3.fromRGB(120, 85, 50), Enum.Material.Wood)
-	p(Vector3.new(1, 10, 1), base * CFrame.new(5.5, 5, 1.5), Color3.fromRGB(120, 85, 50), Enum.Material.Wood)
-	p(Vector3.new(14, 0.6, 6), base * CFrame.new(0, 10, 0.5), Color3.fromRGB(80, 160, 70), Enum.Material.Fabric)
-	local sign = p(Vector3.new(9, 2, 0.4), base * CFrame.new(0, 8, 2), Color3.fromRGB(60, 110, 50), Enum.Material.Wood)
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Front
-	local t = Instance.new("TextLabel")
-	t.Size = UDim2.fromScale(1, 1)
-	t.BackgroundTransparency = 1
-	t.Font = Enum.Font.Arcade
-	t.TextScaled = true
-	t.TextColor3 = Color3.fromRGB(230, 255, 200)
-	t.Text = "GLOBAL SHOP"
-	t.Parent = gui
-	gui.Parent = sign
-	m.PrimaryPart = counter
-	m.Parent = workspace:WaitForChild("World")
-	ShopService:AttachPrompt(counter, "Global Shop")
-end
-
 function ShopService:AttachPrompt(part: BasePart, label: string)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Trade"
@@ -203,13 +168,6 @@ function ShopService:Init(services)
 			self:AttachPrompt(model.PrimaryPart, "Trading Post")
 		end
 	end)
-end
-
-function ShopService:Start()
-	local spawn = workspace:WaitForChild("World"):FindFirstChildOfClass("SpawnLocation")
-	if spawn then
-		makeStall(spawn.Position + Vector3.new(14, -2, 0))
-	end
 end
 
 return ShopService

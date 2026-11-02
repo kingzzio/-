@@ -12,6 +12,7 @@ local Nodes = require(Shared.Nodes)
 local Remotes = require(Shared.Remotes)
 local NodeFactory = require(script.Parent.Parent.World.NodeFactory)
 local Structures = require(script.Parent.Parent.World.Structures)
+local Hub = require(script.Parent.Parent.World.Hub)
 
 local WorldService = {}
 local S
@@ -39,59 +40,100 @@ function WorldService:IsLoaded(key: string): boolean
 end
 
 function WorldService:SurfaceY(x: number, z: number): number
-	local h = WorldGen.Sample(x, z)
-	return h
+	return WorldGen.Ground(x, z)
 end
 
 ---------------------------------------------------------------------------
--- Terrain
+-- Voxel terrain: studded 4x4 blocks, greedy-merged into rectangles so a chunk
+-- is a few dozen parts instead of hundreds. Water is real (swimmable) Terrain.
 ---------------------------------------------------------------------------
+local chunkBlocks: { [string]: Folder } = {}
+
 local function writeTerrain(cx: number, cz: number)
-	local size, vox = Config.ChunkSize, Config.Voxel
-	local n = size // vox
-	local ny = Config.MaxHeight // vox
-	local x0, z0 = cx * size, cz * size
-	local mats, occs = table.create(n), table.create(n)
+	local B = WorldGen.Block
+	local size = Config.ChunkSize
+	local n = size // B
+	local ix0, iz0 = cx * n, cz * n
+	local sea = Config.SeaLevel
+	local heights, colors = table.create(n), table.create(n)
+	local minH = math.huge
 	for i = 1, n do
-		mats[i], occs[i] = table.create(ny), table.create(ny)
-		for j = 1, ny do
-			mats[i][j], occs[i][j] = table.create(n), table.create(n)
+		heights[i], colors[i] = table.create(n), table.create(n)
+		for k = 1, n do
+			local ix, iz = ix0 + i - 1, iz0 + k - 1
+			local h, biome, river = WorldGen.Column(ix, iz)
+			local key, shade = WorldGen.ColumnColor(ix, iz, h, biome, river)
+			heights[i][k] = h
+			colors[i][k] = key .. shade
+			minH = math.min(minH, h)
 		end
 	end
-	local sea = Config.SeaLevel
+
+	local folder = Instance.new("Folder")
+	folder.Name = WorldGen.ChunkKey(cx, cz)
+	local used = table.create(n)
 	for i = 1, n do
-		local wx = x0 + (i - 0.5) * vox
+		used[i] = table.create(n, false)
+	end
+	local floorY = math.min(minH - 8, sea - 40)
+	for i = 1, n do
 		for k = 1, n do
-			local wz = z0 + (k - 0.5) * vox
-			local h, biomeKey, river = WorldGen.Sample(wx, wz)
-			local biome = WorldGen.Biomes[biomeKey]
-			local surface = river and Enum.Material.Mud or biome.surface
-			for j = 1, ny do
-				local y0 = (j - 1) * vox
-				local yTop = y0 + vox
-				local mat, occ = Enum.Material.Air, 0
-				if j == 1 then
-					mat, occ = Enum.Material.Basalt, 1
-				elseif yTop <= h then
-					occ = 1
-					local depth = h - yTop
-					mat = depth < vox and surface or (depth < 14 and biome.under or Enum.Material.Rock)
-				elseif y0 < h then
-					occ = math.clamp((h - y0) / vox, 0.05, 1)
-					mat = surface
-				elseif y0 < sea then
-					mat, occ = Enum.Material.Water, 1
+			if not used[i][k] then
+				local h, c = heights[i][k], colors[i][k]
+				-- grow along k, then along i
+				local w = 1
+				while k + w <= n and not used[i][k + w] and heights[i][k + w] == h and colors[i][k + w] == c do
+					w += 1
 				end
-				mats[i][j][k] = mat
-				occs[i][j][k] = occ
+				local d = 1
+				local ok = true
+				while ok and i + d <= n do
+					for kk = k, k + w - 1 do
+						if used[i + d][kk] or heights[i + d][kk] ~= h or colors[i + d][kk] ~= c then
+							ok = false
+							break
+						end
+					end
+					if ok then
+						d += 1
+					end
+				end
+				for ii = i, i + d - 1 do
+					for kk = k, k + w - 1 do
+						used[ii][kk] = true
+					end
+				end
+				local palKey = string.sub(c, 1, -2)
+				local shade = tonumber(string.sub(c, -1))
+				local col = WorldGen.Palette[palKey][shade]
+				local p = Instance.new("Part")
+				p.Anchored = true
+				p.Size = Vector3.new(d * B, h - floorY, w * B)
+				p.Position = Vector3.new((ix0 + i - 1) * B + d * B / 2, (h + floorY) / 2, (iz0 + k - 1) * B + w * B / 2)
+				p.Color = col
+				p.Material = palKey == "Lava" and Enum.Material.Neon or Enum.Material.Plastic
+				p.TopSurface = Enum.SurfaceType.Studs
+				p.BottomSurface = Enum.SurfaceType.Smooth
+				p.CastShadow = true
+				p.Parent = folder
 			end
 		end
 	end
-	local region = Region3.new(Vector3.new(x0, 0, z0), Vector3.new(x0 + size, ny * vox, z0 + size))
-	Terrain:WriteVoxels(region, vox, mats, occs)
+	folder.Parent = workspace.World.Blocks
+	chunkBlocks[folder.Name] = folder
+
+	if minH < sea then
+		local x0, z0 = cx * size, cz * size
+		Terrain:FillBlock(CFrame.new(x0 + size / 2, (minH + sea) / 2, z0 + size / 2), Vector3.new(size, sea - minH, size), Enum.Material.Water)
+	end
 end
 
 local function clearTerrain(cx: number, cz: number)
+	local key = WorldGen.ChunkKey(cx, cz)
+	if chunkBlocks[key] then
+		chunkBlocks[key]:Destroy()
+		chunkBlocks[key] = nil
+	end
 	local size = Config.ChunkSize
 	local region = Region3.new(Vector3.new(cx * size, 0, cz * size), Vector3.new((cx + 1) * size, Config.MaxHeight, (cz + 1) * size))
 	Terrain:FillRegion(region:ExpandToGrid(4), 4, Enum.Material.Air)
@@ -134,45 +176,41 @@ local function populate(cx: number, cz: number, key: string, folder: Folder)
 	local rng = Random.new(WorldGen.ChunkSeed(cx, cz))
 	local size = Config.ChunkSize
 	local cxMid, czMid = (cx + 0.5) * size, (cz + 0.5) * size
-	local _, centerBiome = WorldGen.Sample(cxMid, czMid)
+	local _, centerBiome = WorldGen.Column(math.floor(cxMid / 4), math.floor(czMid / 4))
 	local count = WorldGen.Biomes[centerBiome].density
 	count = math.max(0, count + rng:NextInteger(-2, 2))
 	local dep = depleted[key]
 	for index = 1, count do
-		local x = cx * size + rng:NextNumber(2, size - 2)
-		local z = cz * size + rng:NextNumber(2, size - 2)
-		local h, biome, river = WorldGen.Sample(x, z)
+		local ix = cx * (size // 4) + rng:NextInteger(0, size // 4 - 1)
+		local iz = cz * (size // 4) + rng:NextInteger(0, size // 4 - 1)
+		local x, z = ix * 4 + 2, iz * 4 + 2
+		local h, biome, river = WorldGen.Column(ix, iz)
 		local nodeType = weightedPick(WorldGen.Biomes[biome].nodes, rng)
 		local subSeed = rng:NextInteger(1, 1e9)
-		if nodeType and not river and h > Config.SeaLevel + 0.5 then
+		local poi = WorldGen.POI(cx, cz)
+		local onPoi = poi and math.abs(x - poi.x) < 16 and math.abs(z - poi.z) < 16
+		if nodeType and not river and not onPoi and h > Config.SeaLevel + 0.5 and not WorldGen.InHub(Vector3.new(x, 0, z), 30) then
 			if not (dep and dep[index] and dep[index] > os.time()) then
-				spawnNode(key, folder, index, nodeType, Vector3.new(x, h - 0.4, z), Random.new(subSeed))
+				spawnNode(key, folder, index, nodeType, Vector3.new(x, h, z), Random.new(subSeed))
 			end
 		end
 	end
 end
 
 local function buildPOI(cx: number, cz: number, key: string): Folder?
-	local rng = Random.new(WorldGen.ChunkSeed(cx, cz) + 99991)
-	if rng:NextNumber() > Config.StructureChance then
+	local poi = WorldGen.POI(cx, cz)
+	if not poi then
 		return nil
 	end
-	local size = Config.ChunkSize
-	local x, z = (cx + 0.5) * size, (cz + 0.5) * size
-	local h, biome = WorldGen.Sample(x, z)
-	if h < Config.SeaLevel + 1 then
-		return nil
-	end
-	local kind = Structures.PickKind(biome, rng)
+	local rng = Random.new(poi.seed)
+	local kind = Structures.PickKind(poi.biome, rng)
 	if not kind then
 		return nil
 	end
-	-- flatten a pad under the ruin
-	Terrain:FillBlock(CFrame.new(x, h - 3, z), Vector3.new(24, 6, 24), WorldGen.Biomes[biome].under)
-	Terrain:FillBlock(CFrame.new(x, h + 6, z), Vector3.new(24, 12, 24), Enum.Material.Air)
+	local x, z, h = poi.x, poi.z, poi.h
 	local folder = Instance.new("Folder")
 	folder.Name = key
-	local model = Structures.Build(kind, Vector3.new(x, h + 0.5, z), rng, key)
+	local model = Structures.Build(kind, Vector3.new(x, h + 0.75, z), rng, key)
 	model.Parent = folder
 	folder.Parent = poiFolder
 
@@ -343,12 +381,13 @@ function WorldService:FindLand(near: Vector3?, scatter: number): Vector3
 	for _ = 1, 60 do
 		local x = (near and near.X or 0) + rng:NextNumber(-scatter, scatter)
 		local z = (near and near.Z or 0) + rng:NextNumber(-scatter, scatter)
-		local h, biome = WorldGen.Sample(x, z)
+		local _, biome = WorldGen.Sample(x, z)
+		local h = WorldGen.Ground(x, z)
 		if biome ~= "Ocean" and biome ~= "Beach" and biome ~= "Peaks" and h > Config.SeaLevel + 2 then
 			return Vector3.new(x, h, z)
 		end
 	end
-	return Vector3.new(0, WorldGen.Sample(0, 0), 0)
+	return self.HubCenter
 end
 
 function WorldService:SpawnPointFor(player: Player): Vector3
@@ -359,9 +398,11 @@ function WorldService:SpawnPointFor(player: Player): Vector3
 	local profile = S.DataService:Get(player)
 	if profile and profile.lastPos and not player:GetAttribute("Died") then
 		local p = profile.lastPos
-		return Vector3.new(p[1], WorldGen.Sample(p[1], p[3]), p[3])
+		return Vector3.new(p[1], WorldGen.Ground(p[1], p[3]), p[3])
 	end
-	return self:FindLand(nil, Config.SpawnScatter)
+	-- new players (and the dead without a faction home) start at the hub plaza
+	local a = math.random() * math.pi * 2
+	return self.HubCenter + Vector3.new(math.cos(a) * 30, 1, math.sin(a) * 30)
 end
 
 local function onCharacter(player: Player, char: Model)
@@ -401,6 +442,9 @@ function WorldService:Init(services)
 	poiFolder = Instance.new("Folder")
 	poiFolder.Name = "Ruins"
 	poiFolder.Parent = worldFolder
+	local blocks = Instance.new("Folder")
+	blocks.Name = "Blocks"
+	blocks.Parent = worldFolder
 	self.NodesFolder = nodesFolder
 	self.WorldFolder = worldFolder
 
@@ -437,16 +481,12 @@ function WorldService:Init(services)
 	Terrain:SetMaterialColor(Enum.Material.Mud, Color3.fromRGB(95, 85, 60))
 	Terrain:SetMaterialColor(Enum.Material.Sand, Color3.fromRGB(235, 215, 150))
 
-	-- a fallback SpawnLocation so Roblox never drops players into the void
-	local spawnPos = self:FindLand(nil, 200)
-	self:EnsureArea(spawnPos, 1)
-	local sl = Instance.new("SpawnLocation")
-	sl.Anchored = true
-	sl.Transparency = 1
-	sl.CanCollide = false
-	sl.Size = Vector3.new(6, 1, 6)
-	sl.Position = spawnPos + Vector3.new(0, 2, 0)
-	sl.Parent = worldFolder
+	-- the spawn hub (also provides the SpawnLocation)
+	local hub = WorldGen.Hub
+	self.HubCenter = Vector3.new(hub.x, hub.h, hub.z)
+	self:EnsureArea(self.HubCenter, 2)
+	local _, stations = Hub.Build(S, worldFolder)
+	self.HubStations = stations
 
 	Players.PlayerAdded:Connect(function(p)
 		p.CharacterAdded:Connect(function(c)

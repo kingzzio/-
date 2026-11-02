@@ -23,16 +23,19 @@ local zoomIndex = 2
 local markers: { { x: number, z: number, label: string, color: Color3, t: number } } = {}
 
 local gui = Theme.Screen("Map", 13)
-local root = Theme.Card({
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.52),
-	Size = UDim2.fromOffset(820, 600),
-	Visible = false,
-	Parent = gui,
+local win = Theme.Window({
+	title = "World Map",
+	icon = "🗺",
+	color = Color3.fromRGB(40, 200, 190),
+	body = Color3.fromRGB(40, 90, 150),
+	size = UDim2.fromOffset(860, 640),
+	maxSize = Vector2.new(860, 640),
+	parent = gui,
+	onClose = function()
+		State.OpenPanel(nil)
+	end,
 })
-New("UISizeConstraint", { MaxSize = Vector2.new(820, 600), Parent = root })
-New("UIAspectRatioConstraint", { AspectRatio = 820 / 600, Parent = root })
-
+local root = win.content
 local mapFrame = New("Frame", {
 	Position = UDim2.fromOffset(14, 14),
 	Size = UDim2.new(0.7, -14, 1, -28),
@@ -58,14 +61,11 @@ end
 
 -- side panel
 local side = New("Frame", { BackgroundTransparency = 1, Position = UDim2.new(0.7, 10, 0, 14), Size = UDim2.new(0.3, -24, 1, -28), Parent = root })
-Theme.Label("WORLD MAP", { Size = UDim2.new(1, 0, 0, 28), Font = Theme.FontHeavy, TextSize = 24, Parent = side })
+Theme.Label("EXPLORE", { Size = UDim2.new(1, 0, 0, 28), Font = Theme.FontHeavy, TextSize = 26, Parent = side })
 local coords = Theme.Label("", { Position = UDim2.fromOffset(0, 30), Size = UDim2.new(1, 0, 0, 18), TextSize = 12, TextColor3 = C.Muted, Parent = side })
 local zoomLabel = Theme.Label("", { Position = UDim2.fromOffset(0, 50), Size = UDim2.new(1, 0, 0, 18), TextSize = 12, TextColor3 = C.Muted, Parent = side })
 local zin = Theme.Button("+", C.CardLight, { Position = UDim2.fromOffset(0, 72), Size = UDim2.fromOffset(40, 32), Parent = side })
 local zout = Theme.Button("−", C.CardLight, { Position = UDim2.fromOffset(46, 72), Size = UDim2.fromOffset(40, 32), Parent = side })
-Theme.Button("X", C.Red, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Size = UDim2.fromOffset(34, 34), Parent = side }).MouseButton1Click:Connect(function()
-	State.OpenPanel(nil)
-end)
 
 Theme.Label("MAP CONTROL", { Position = UDim2.fromOffset(0, 116), Size = UDim2.new(1, 0, 0, 20), Font = Theme.FontHeavy, TextSize = 18, TextColor3 = C.Doom, Parent = side })
 Theme.Label("Share of all claimed land, every shard", { Position = UDim2.fromOffset(0, 136), Size = UDim2.new(1, 0, 0, 14), TextSize = 10, TextColor3 = C.Muted, Parent = side })
@@ -237,15 +237,17 @@ function MapUI.Init()
 		fullRedraw()
 	end)
 	State.On("openPanel", function(name)
-		root.Visible = name == "Map"
+		task.spawn(function()
+			win:SetVisible(name == "Map")
+		end)
 		hopCard.Visible = false
-		if root.Visible then
+		if name == "Map" then
 			fullRedraw()
 			task.spawn(refreshBoard)
 		end
 	end)
 	State.On("echoes", function()
-		if root.Visible then
+		if win:IsVisible() then
 			drawOverlay()
 		end
 	end)

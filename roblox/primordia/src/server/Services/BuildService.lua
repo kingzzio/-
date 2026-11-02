@@ -361,6 +361,10 @@ function BuildService:Place(player: Player, itemId: string, cf: CFrame): (boolea
 		return false, "Something is in the way"
 	end
 
+	if WorldGen.InHub(pos, 24) then
+		return false, "The hub is a safe zone — build out in the wilds"
+	end
+
 	local faction = player:GetAttribute("Faction")
 	local claim = S.FactionService:ClaimAt(pos)
 	if claim and claim.faction ~= faction then
@@ -547,10 +551,15 @@ function BuildService:HammerHit(player: Player, model: Model)
 	queueOp(b.key, { op = "hp", id = id, hp = b.rec.hp })
 end
 
-function BuildService:FindNearby(player: Player, kind: string, range: number): Model?
+function BuildService:FindNearby(player: Player, kind: string, range: number): any
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if not root then
 		return nil
+	end
+	for _, st in S.WorldService.HubStations or {} do
+		if st.kind == kind and (st.pos - root.Position).Magnitude <= range + 6 then
+			return st -- hub stations work for everyone
+		end
 	end
 	for _, b in builds do
 		if b.rec.t == kind and b.model.PrimaryPart and (b.model.PrimaryPart.Position - root.Position).Magnitude <= range then

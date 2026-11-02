@@ -244,7 +244,7 @@ local function setupRam(model: Model)
 			return
 		end
 		local cf = model:GetPivot() * CFrame.new(0, 0, -4)
-		local h = WorldGen.Sample(cf.Position.X, cf.Position.Z)
+		local h = WorldGen.Ground(cf.Position.X, cf.Position.Z)
 		local blocked = #S.BuildService:InRadius(cf.Position + cf.LookVector * 6, 3) > 0
 		if blocked then
 			Remotes.Notify:FireClient(player, "Something's in the way — Ram it!", "info")
@@ -288,7 +288,7 @@ function SiegeService:Init(services)
 		local flat = (target - origin) * Vector3.new(1, 0, 1)
 		if flat.Magnitude > def.range then
 			target = origin + flat.Unit * def.range
-			target = Vector3.new(target.X, WorldGen.Sample(target.X, target.Z), target.Z)
+			target = Vector3.new(target.X, WorldGen.Ground(target.X, target.Z), target.Z)
 		end
 		lastFire[machineId] = os.clock()
 		model:SetAttribute("Loaded", nil)

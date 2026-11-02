@@ -26,6 +26,7 @@ local EVENTS = {
 	"Claims", -- server → client: territory list for the map
 	"WorldEvent", -- server → client: (eventName, data)
 	"Stats", -- server → client: personal stats
+	"OpenPanel", -- server → client: (panelName) e.g. from hub stalls
 }
 
 local FUNCTIONS = {

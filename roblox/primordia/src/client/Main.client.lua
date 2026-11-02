@@ -16,6 +16,7 @@ local InventoryUI = require(UI.InventoryUI)
 local ShopUI = require(UI.ShopUI)
 local FactionUI = require(UI.FactionUI)
 local MapUI = require(UI.MapUI)
+local Menu = require(UI.Menu)
 local BuildController = require(Controllers.BuildController)
 local ActionController = require(Controllers.ActionController)
 local WaypointController = require(Controllers.WaypointController)
@@ -41,6 +42,34 @@ BuildController.Init()
 ActionController.Init(BuildController.IsActive)
 WaypointController.Init()
 InventoryUI.OnPlace = BuildController.Start
+
+Menu.Init({
+	{ icon = "🛒", label = "SHOP", color = Color3.fromRGB(255, 196, 30), fn = ShopUI.Open },
+	{ icon = "🎒", label = "BAG", key = "G", color = Color3.fromRGB(40, 150, 255), fn = function()
+		InventoryUI.Open("All")
+	end },
+	{ icon = "⚒", label = "CRAFT", key = "C", color = Color3.fromRGB(255, 120, 40), fn = function()
+		InventoryUI.Open("Craft")
+	end },
+	{ icon = "🛡", label = "CLAN", key = "F", color = Color3.fromRGB(170, 70, 255), fn = function()
+		State.OpenPanel("Faction")
+	end },
+	{ icon = "🗺", label = "MAP", key = "M", color = Color3.fromRGB(40, 200, 190), fn = function()
+		State.OpenPanel("Map")
+	end },
+	{ icon = "🧱", label = "BUILD", key = "B", color = Color3.fromRGB(110, 210, 60), fn = function()
+		InventoryUI.Open("Building")
+	end },
+})
+
+-- hub stalls ask the client to open a panel
+Remotes.OpenPanel.OnClientEvent:Connect(function(name)
+	if name == "Craft" then
+		InventoryUI.Open("Craft")
+	elseif name == "Faction" then
+		State.OpenPanel("Faction")
+	end
+end)
 
 -- First-join walkthrough as trailer-style captions.
 task.spawn(function()

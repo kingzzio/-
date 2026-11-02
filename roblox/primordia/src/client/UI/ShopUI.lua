@@ -1,5 +1,6 @@
--- GLOBAL SHOP: wooden market stall look. Live cross-server prices with trend
--- arrows (red = market flooded, green = scarce), Sell 1 / Sell All, and Buy.
+-- GLOBAL SHOP in the simulator style: yellow header, green studded body,
+-- "- Sell -" / "- Buy -" sections of sunburst cards with a 3D item, the live
+-- cross-server price and a green price button.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Items = require(Shared.Items)
@@ -13,107 +14,154 @@ local C = Theme.Colors
 local ShopUI = {}
 
 local gui = Theme.Screen("Shop", 11)
-local root = New("Frame", {
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.52),
-	Size = UDim2.new(0, 680, 0.74, 0),
-	BackgroundColor3 = C.Wood,
-	Visible = false,
-	Parent = gui,
-}, {
-	Theme.Corner(8),
-	New("UIStroke", { Color = C.WoodDark, Thickness = 6 }),
-	New("UISizeConstraint", { MaxSize = Vector2.new(680, 580) }),
-	-- plank stripes
-	New("UIGradient", {
-		Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Color3.fromRGB(125, 160, 70)),
-			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(105, 140, 58)),
-			ColorSequenceKeypoint.new(1, Color3.fromRGB(125, 160, 70)),
-		}),
-	}),
+local win = Theme.Window({
+	title = "Shop",
+	icon = "🛒",
+	color = Color3.fromRGB(255, 196, 30),
+	body = Color3.fromRGB(80, 190, 60),
+	size = UDim2.new(0, 700, 0.8, 0),
+	maxSize = Vector2.new(700, 620),
+	parent = gui,
+	onClose = function()
+		State.OpenPanel(nil)
+	end,
 })
+local root = win.content
 
-local sign = New("Frame", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 12), Size = UDim2.fromOffset(300, 46), BackgroundColor3 = C.WoodDark, Parent = root }, {
-	Theme.Corner(4),
-	New("UIStroke", { Color = Color3.fromRGB(160, 200, 100), Thickness = 2 }),
-})
-Theme.Label("GLOBAL SHOP", { Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Center, Font = Theme.FontPixel, TextSize = 30, TextColor3 = Color3.fromRGB(220, 250, 180), Parent = sign })
-local boostLabel = Theme.Label("", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 62), Size = UDim2.fromOffset(400, 18), TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = C.Gold, TextSize = 14, Parent = root })
-Theme.Button("X", C.Red, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 10), Size = UDim2.fromOffset(40, 40), Parent = root }).MouseButton1Click:Connect(function()
-	State.OpenPanel(nil)
-end)
+local boost = Theme.Pill("", C.Pink, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 12), Size = UDim2.fromOffset(420, 28), Parent = root })
 
-local function column(title: string, x: number)
-	Theme.Label(title, { Position = UDim2.new(x, 14, 0, 84), Size = UDim2.new(0.5, -28, 0, 22), Font = Theme.FontHeavy, TextSize = 20, TextColor3 = Color3.fromRGB(250, 255, 230), Parent = root })
-	return New("ScrollingFrame", {
-		Position = UDim2.new(x, 12, 0, 110),
-		Size = UDim2.new(0.5, -24, 1, -122),
-		BackgroundColor3 = Color3.fromRGB(70, 95, 40),
-		BackgroundTransparency = 0.35,
-		BorderSizePixel = 0,
-		ScrollBarThickness = 6,
-		AutomaticCanvasSize = Enum.AutomaticSize.Y,
-		CanvasSize = UDim2.new(),
-		Parent = root,
-	}, { Theme.Corner(8), Theme.Padding(6), New("UIListLayout", { Padding = UDim.new(0, 6) }) })
+local list = New("ScrollingFrame", {
+	Position = UDim2.fromOffset(14, 48),
+	Size = UDim2.new(1, -28, 1, -60),
+	BackgroundTransparency = 1,
+	BorderSizePixel = 0,
+	ScrollBarThickness = 8,
+	ScrollBarImageColor3 = Color3.new(1, 1, 1),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	CanvasSize = UDim2.new(),
+	Parent = root,
+}, { New("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center }) })
+
+local CARD_COLORS = {
+	Color3.fromRGB(255, 120, 40), Color3.fromRGB(110, 210, 60), Color3.fromRGB(60, 150, 255),
+	Color3.fromRGB(175, 80, 255), Color3.fromRGB(255, 80, 150), Color3.fromRGB(40, 200, 190),
+}
+
+local order = 0
+local function nextOrder()
+	order += 1
+	return order
 end
-local sellList = column("SELL  (live prices, all servers)", 0)
-local buyList = column("BUY", 0.5)
 
-local function row(parent, def, text: string, sub: string, subColor: Color3)
-	local r = New("Frame", { Size = UDim2.new(1, -4, 0, 50), BackgroundColor3 = Color3.fromRGB(240, 235, 210), Parent = parent }, { Theme.Corner(8) })
-	local icon = ItemIcon.new(def.id, r, UDim2.fromOffset(42, 42))
-	icon.Position = UDim2.fromOffset(4, 4)
-	Theme.Label(text, { Position = UDim2.fromOffset(48, 5), Size = UDim2.new(1, -170, 0, 20), TextColor3 = Color3.fromRGB(50, 50, 40), TextSize = 14, TextTruncate = Enum.TextTruncate.AtEnd, Parent = r })
-	Theme.Label(sub, { Position = UDim2.fromOffset(48, 25), Size = UDim2.new(1, -170, 0, 18), TextColor3 = subColor, TextSize = 12, Parent = r })
-	return r
+local function gridSection(title: string)
+	Theme.Section(title, { LayoutOrder = nextOrder(), Parent = list })
+	return New("Frame", {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -8, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = nextOrder(),
+		Parent = list,
+	}, { New("UIGridLayout", { CellSize = UDim2.new(0.5, -8, 0, 150), CellPadding = UDim2.fromOffset(12, 12) }) })
+end
+
+local function shopCard(parent, i: number, def, title: string, sub: string, subColor: Color3?)
+	local col = CARD_COLORS[(i - 1) % #CARD_COLORS + 1]
+	local cardFrame = New("Frame", { BackgroundColor3 = col, BorderSizePixel = 0, ClipsDescendants = true, Parent = parent }, {
+		Theme.Corner(12),
+		Theme.Stroke(C.Outline, 3),
+		Theme.Gloss(col, 0.3),
+	})
+	Theme.Studs(cardFrame, 30, 0.88, 60)
+	Theme.Sunburst(cardFrame)
+	Theme.Label(title, { Position = UDim2.fromOffset(10, 6), Size = UDim2.new(1, -20, 0, 30), Font = Theme.FontHeavy, TextSize = 24, TextXAlignment = Enum.TextXAlignment.Center, TextScaled = true, ZIndex = 3, Parent = cardFrame })
+	local icon = ItemIcon.new(def.id, cardFrame, UDim2.fromOffset(92, 92))
+	icon.Position = UDim2.fromOffset(10, 40)
+	icon.ZIndex = 2
+	local s = Theme.Label(sub, { Position = UDim2.new(0, 104, 0, 44), Size = UDim2.new(1, -112, 0, 40), TextSize = 15, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 3, Parent = cardFrame })
+	if subColor then
+		s.TextColor3 = subColor
+	end
+	return cardFrame
+end
+
+local function priceButton(parent, text: string, color: Color3, x: number, w: number)
+	return Theme.Button(text, color, {
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, x, 1, -12),
+		Size = UDim2.fromOffset(w, 40),
+		Font = Theme.FontHeavy,
+		TextSize = 20,
+		ZIndex = 4,
+		Parent = parent,
+	})
 end
 
 local function render(data)
 	if not data then
 		return
 	end
-	boostLabel.Text = data.boost and data.boost > 1 and ("✨ " .. data.boost .. "x PRICES RIGHT NOW ✨") or "Prices fall when everyone sells the same thing — and recover over time"
-	for _, list in { sellList, buyList } do
-		for _, c in list:GetChildren() do
-			if c:IsA("Frame") then
-				c:Destroy()
-			end
+	order = 0
+	for _, c in list:GetChildren() do
+		if c:IsA("GuiObject") then
+			c:Destroy()
 		end
 	end
+	boost.Text.Text = (data.boost and data.boost > 1) and ("✨ " .. data.boost .. "x PRICES RIGHT NOW ✨") or "Live prices · shared by every server"
+	boost.BackgroundColor3 = (data.boost and data.boost > 1) and C.Pink or Color3.fromRGB(40, 120, 40)
+
+	local sell = gridSection("Sell")
+	local n = 0
 	for _, e in data.sell do
 		local have = State.inventory[e.id] or 0
 		if have > 0 then
+			n += 1
 			local def = Items.Get(e.id)
 			local pct = math.floor((e.trend - 1) * 100 + 0.5)
-			local arrow = pct < -2 and ("▼ " .. pct .. "%") or (pct > 2 and ("▲ +" .. pct .. "%") or "● stable")
-			local col = pct < -2 and Color3.fromRGB(200, 50, 50) or Color3.fromRGB(40, 140, 50)
-			local r = row(sellList, def, def.name .. "  ×" .. have, e.price .. "c each  " .. arrow, col)
-			Theme.Button("1", C.Blue, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -66, 0.5, 0), Size = UDim2.fromOffset(40, 34), Parent = r }).MouseButton1Click:Connect(function()
+			local trend = pct < -2 and ("▼ " .. pct .. "%") or (pct > 2 and ("▲ +" .. pct .. "%") or "● stable")
+			local trendColor = pct < -2 and Color3.fromRGB(255, 200, 200) or Color3.fromRGB(220, 255, 200)
+			local cardFrame = shopCard(sell, n, def, def.name, "You have " .. Theme.FormatNumber(have) .. "\n" .. trend, trendColor)
+			priceButton(cardFrame, "💰 " .. e.price, C.Accent, -76, 110).MouseButton1Click:Connect(function()
 				Remotes.ShopSell:FireServer(e.id, 1)
 			end)
-			Theme.Button("All", Color3.fromRGB(40, 150, 60), { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(54, 34), Parent = r }).MouseButton1Click:Connect(function()
+			priceButton(cardFrame, "ALL", C.Gold, -12, 58).MouseButton1Click:Connect(function()
 				Remotes.ShopSell:FireServer(e.id, have)
 			end)
 		end
 	end
-	if #sellList:GetChildren() <= 3 then
-		Theme.Label("Nothing to sell yet — farm crops, mine gems, loot ruins.", { Size = UDim2.new(1, 0, 0, 40), TextWrapped = true, TextColor3 = Color3.fromRGB(230, 240, 210), Parent = sellList })
+	if n == 0 then
+		Theme.Label("Nothing to sell yet — farm crops, mine gems, loot ruins!", { Size = UDim2.new(1, 0, 0, 40), TextXAlignment = Enum.TextXAlignment.Center, TextSize = 18, Parent = sell })
+		sell:FindFirstChildOfClass("UIGridLayout").CellSize = UDim2.new(1, 0, 0, 40)
 	end
-	for _, e in data.buy do
+
+	local buy = gridSection("Buy")
+	for i, e in data.buy do
 		local def = Items.Get(e.id)
-		local r = row(buyList, def, def.name, e.price .. " coins", Color3.fromRGB(120, 90, 20))
-		Theme.Button("Buy", C.Gold, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -66, 0.5, 0), Size = UDim2.fromOffset(52, 34), TextColor3 = Color3.new(0, 0, 0), Parent = r }).MouseButton1Click:Connect(function()
+		local cardFrame = shopCard(buy, i + 2, def, def.name, def.rarity .. " " .. def.category)
+		priceButton(cardFrame, "💰 " .. e.price, C.Accent, -76, 110).MouseButton1Click:Connect(function()
 			Remotes.ShopBuy:FireServer(e.id, 1)
 		end)
-		Theme.Button("x10", Color3.fromRGB(200, 150, 30), { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(52, 34), TextColor3 = Color3.new(0, 0, 0), Parent = r }).MouseButton1Click:Connect(function()
+		priceButton(cardFrame, "x10", C.Blue, -12, 58).MouseButton1Click:Connect(function()
 			Remotes.ShopBuy:FireServer(e.id, 10)
 		end)
 	end
 end
 
 local lastData
+function ShopUI.Open()
+	task.spawn(function()
+		local ok, data = pcall(function()
+			return Remotes.GetPrices:InvokeServer()
+		end)
+		if ok and data then
+			lastData = data
+			if State.openPanel ~= "Shop" then
+				State.OpenPanel("Shop")
+			end
+			render(data)
+		end
+	end)
+end
+
 function ShopUI.Init()
 	Remotes.OpenShop.OnClientEvent:Connect(function(data)
 		lastData = data
@@ -123,10 +171,12 @@ function ShopUI.Init()
 		render(data)
 	end)
 	State.On("openPanel", function(name)
-		root.Visible = name == "Shop"
+		task.spawn(function()
+			win:SetVisible(name == "Shop")
+		end)
 	end)
 	State.On("inventory", function()
-		if root.Visible then
+		if win:IsVisible() then
 			render(lastData)
 		end
 	end)
