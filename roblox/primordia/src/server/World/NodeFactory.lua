@@ -40,7 +40,7 @@ local function nameTag(model: Model, nodeType: string, height: number)
 		return
 	end
 	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromOffset(150, 44)
+	bb.Size = UDim2.fromScale(6, 1.8)
 	bb.StudsOffset = Vector3.new(0, height + 2, 0)
 	bb.MaxDistance = 90
 	bb.LightInfluence = 0

@@ -8,6 +8,7 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
+local WorldGen = require(Shared.WorldGen)
 local Remotes = require(Shared.Remotes)
 local Theme = require(script.Parent.Theme)
 local State = require(script.Parent.State)
@@ -24,7 +25,7 @@ local ping = 0
 ---------------------------------------------------------------------------
 local leftColumn = New("Frame", {
 	BackgroundTransparency = 1,
-	Position = UDim2.fromOffset(16, 16),
+	Position = UDim2.fromOffset(16, 70), -- below Roblox's own topbar buttons
 	Size = UDim2.fromOffset(300, 700),
 	Parent = gui,
 }, { New("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder }) })
@@ -159,12 +160,13 @@ end
 ---------------------------------------------------------------------------
 local function buildFactionWidget()
 	local card = Theme.Card({
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, -16, 1, -16),
 		Size = UDim2.fromOffset(CARD_W, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 0.2,
 		Visible = false,
-		LayoutOrder = 2,
-		Parent = leftColumn,
+		Parent = gui,
 	})
 	Theme.Padding(10).Parent = card
 	New("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = card })
@@ -304,16 +306,6 @@ local function buildVitals()
 		foodLabel.Text = "🍖 " .. math.floor(hunger)
 	end)
 
-	Theme.Label("1-9 Tools · G Bag · C Craft · F Clan · M Map · B Build · Tab Server", {
-		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -16, 1, -12),
-		Size = UDim2.fromOffset(460, 18),
-		TextXAlignment = Enum.TextXAlignment.Right,
-		TextSize = 13,
-		TextColor3 = C.Muted,
-		TextStrokeTransparency = 0.6,
-		Parent = gui,
-	})
 end
 
 ---------------------------------------------------------------------------
@@ -344,10 +336,14 @@ local function buildTerritory()
 						break
 					end
 				end
-				local key = found and found.tag or "wild"
+				local inHub = WorldGen.InHub(root.Position, 0)
+				local key = inHub and "hub" or (found and found.tag or "wild")
 				if key ~= last then
 					last = key
-					if found then
+					if inHub then
+						banner.Text = "🛡 SPAWN PLAZA · SAFE ZONE"
+						banner.TextColor3 = Color3.fromRGB(255, 220, 60)
+					elseif found then
 						local mine = found.faction == player:GetAttribute("Faction")
 						banner.Text = mine and ("🏠 [" .. found.tag .. "] HOME TERRITORY") or ("⚔ [" .. found.tag .. "] TERRITORY")
 						banner.TextColor3 = Color3.fromHex(found.color)

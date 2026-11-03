@@ -263,9 +263,33 @@ function Theme.Caption(text: string, color: Color3?, size: number?)
 	})
 end
 
+-- Every screen is laid out on a virtual 1500x860 canvas and scaled to fit the
+-- real viewport, so nothing overlaps on small windows (or Studio's viewport).
+local REF = Vector2.new(1500, 860)
+local scaledRoots = {}
+local function fitScale(): number
+	local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or REF
+	return math.clamp(math.min(vp.X / REF.X, vp.Y / REF.Y), 0.4, 1.3)
+end
+local function refreshScales()
+	local sc = fitScale()
+	for _, r in scaledRoots do
+		r.frame.Size = UDim2.fromScale(1 / sc, 1 / sc)
+		r.scale.Scale = sc
+	end
+end
+task.defer(function()
+	local cam = workspace.CurrentCamera
+	if cam then
+		cam:GetPropertyChangedSignal("ViewportSize"):Connect(refreshScales)
+	end
+	refreshScales()
+end)
+Theme.UIScale = fitScale
+
 function Theme.Screen(name: string, order: number?)
 	local player = game:GetService("Players").LocalPlayer
-	return New("ScreenGui", {
+	local screen = New("ScreenGui", {
 		Name = name,
 		ResetOnSpawn = false,
 		IgnoreGuiInset = true,
@@ -273,6 +297,13 @@ function Theme.Screen(name: string, order: number?)
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		Parent = player:WaitForChild("PlayerGui"),
 	})
+	local frame = New("Frame", { Name = "Root", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = screen })
+	local scale = New("UIScale", { Parent = frame })
+	table.insert(scaledRoots, { frame = frame, scale = scale })
+	local sc = fitScale()
+	frame.Size = UDim2.fromScale(1 / sc, 1 / sc)
+	scale.Scale = sc
+	return frame
 end
 
 --[[ Theme.Window: the standard pop-up.

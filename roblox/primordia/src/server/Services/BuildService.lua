@@ -110,7 +110,7 @@ local function decorate(model: Model, kind: string, main: Part, rec)
 		light.Brightness = 2
 		light.Parent = main
 		local bb = Instance.new("BillboardGui")
-		bb.Size = UDim2.fromOffset(200, 50)
+		bb.Size = UDim2.fromScale(8, 2)
 		bb.StudsOffset = Vector3.new(0, size.Y / 2 + 5, 0)
 		bb.MaxDistance = 400
 		local t = Instance.new("TextLabel")
@@ -135,7 +135,7 @@ local function decorate(model: Model, kind: string, main: Part, rec)
 	if kind == "Harvester" or kind == "MarketCart" or kind == "Beehive" then
 		local bb = Instance.new("BillboardGui")
 		bb.Name = "Status"
-		bb.Size = UDim2.fromOffset(180, 40)
+		bb.Size = UDim2.fromScale(8, 1.6)
 		bb.StudsOffset = Vector3.new(0, size.Y / 2 + 2.5, 0)
 		bb.MaxDistance = 80
 		local t = Instance.new("TextLabel")

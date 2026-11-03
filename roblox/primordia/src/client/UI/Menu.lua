@@ -27,10 +27,10 @@ local function sideMenu(actions)
 	local col = New("Frame", {
 		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 14, 0.56, 0),
-		Size = UDim2.fromOffset(170, 360),
+		Position = UDim2.new(0, 16, 0.5, 20),
+		Size = UDim2.fromOffset(170, 290),
 		Parent = gui,
-	}, { New("UIGridLayout", { CellSize = UDim2.fromOffset(78, 82), CellPadding = UDim2.fromOffset(10, 12), SortOrder = Enum.SortOrder.LayoutOrder }) })
+	}, { New("UIGridLayout", { CellSize = UDim2.fromOffset(76, 76), CellPadding = UDim2.fromOffset(10, 10), SortOrder = Enum.SortOrder.LayoutOrder }) })
 	for i, a in actions do
 		local b = New("TextButton", {
 			Text = "",

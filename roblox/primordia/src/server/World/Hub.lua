@@ -33,7 +33,9 @@ end
 
 local function label(part: BasePart, text: string, color: Color3, offsetY: number, size: Vector2?)
 	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromOffset((size or Vector2.new(220, 50)).X, (size or Vector2.new(220, 50)).Y)
+	-- sized in studs (not pixels) so signs shrink with distance like real objects
+	local px = size or Vector2.new(220, 50)
+	bb.Size = UDim2.fromScale(px.X / 22, px.Y / 22)
 	bb.StudsOffset = Vector3.new(0, offsetY, 0)
 	bb.MaxDistance = 220
 	bb.LightInfluence = 0
