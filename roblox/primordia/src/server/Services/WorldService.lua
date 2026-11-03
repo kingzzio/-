@@ -1,0 +1,523 @@
+-- Infinite world streaming. Terrain chunks are generated around every player (and
+-- freed when nobody is near), then decorated with harvestable nodes and ruins.
+-- Everything is deterministic from the world seed, so every shard builds the
+-- exact same world.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared.Config)
+local WorldGen = require(Shared.WorldGen)
+local Nodes = require(Shared.Nodes)
+local Remotes = require(Shared.Remotes)
+local NodeFactory = require(script.Parent.Parent.World.NodeFactory)
+local Structures = require(script.Parent.Parent.World.Structures)
+local Hub = require(script.Parent.Parent.World.Hub)
+
+local WorldService = {}
+local S
+
+local Terrain = workspace.Terrain
+local worldFolder, nodesFolder, poiFolder
+
+local loaded: { [string]: { cx: number, cz: number, nodes: Folder, poi: Folder? } } = {}
+local depleted: { [string]: { [number]: number } } = {} -- chunk → node index → respawn time
+local chestCooldowns: { [string]: { [number]: number } } = {} -- chestId → userId → time
+local queue: { { cx: number, cz: number, d: number } } = {}
+local queued: { [string]: boolean } = {}
+
+WorldService._onChunkLoaded = {}
+WorldService._onChunkUnloaded = {}
+
+function WorldService:OnChunkLoaded(cb)
+	table.insert(self._onChunkLoaded, cb)
+end
+function WorldService:OnChunkUnloaded(cb)
+	table.insert(self._onChunkUnloaded, cb)
+end
+function WorldService:IsLoaded(key: string): boolean
+	return loaded[key] ~= nil
+end
+
+function WorldService:SurfaceY(x: number, z: number): number
+	return WorldGen.Ground(x, z)
+end
+
+---------------------------------------------------------------------------
+-- Voxel terrain: studded 4x4 blocks, greedy-merged into rectangles so a chunk
+-- is a few dozen parts instead of hundreds. Water is real (swimmable) Terrain.
+---------------------------------------------------------------------------
+local chunkBlocks: { [string]: Folder } = {}
+
+local function writeTerrain(cx: number, cz: number)
+	local B = WorldGen.Block
+	local size = Config.ChunkSize
+	local n = size // B
+	local ix0, iz0 = cx * n, cz * n
+	local sea = Config.SeaLevel
+	local heights, colors = table.create(n), table.create(n)
+	local minH = math.huge
+	for i = 1, n do
+		heights[i], colors[i] = table.create(n), table.create(n)
+		for k = 1, n do
+			local ix, iz = ix0 + i - 1, iz0 + k - 1
+			local h, biome, river = WorldGen.Column(ix, iz)
+			local key, shade = WorldGen.ColumnColor(ix, iz, h, biome, river)
+			heights[i][k] = h
+			colors[i][k] = key .. shade
+			minH = math.min(minH, h)
+		end
+	end
+
+	local folder = Instance.new("Folder")
+	folder.Name = WorldGen.ChunkKey(cx, cz)
+	local used = table.create(n)
+	for i = 1, n do
+		used[i] = table.create(n, false)
+	end
+	local floorY = math.min(minH - 8, sea - 40)
+	for i = 1, n do
+		for k = 1, n do
+			if not used[i][k] then
+				local h, c = heights[i][k], colors[i][k]
+				-- grow along k, then along i
+				local w = 1
+				while k + w <= n and not used[i][k + w] and heights[i][k + w] == h and colors[i][k + w] == c do
+					w += 1
+				end
+				local d = 1
+				local ok = true
+				while ok and i + d <= n do
+					for kk = k, k + w - 1 do
+						if used[i + d][kk] or heights[i + d][kk] ~= h or colors[i + d][kk] ~= c then
+							ok = false
+							break
+						end
+					end
+					if ok then
+						d += 1
+					end
+				end
+				for ii = i, i + d - 1 do
+					for kk = k, k + w - 1 do
+						used[ii][kk] = true
+					end
+				end
+				local palKey = string.sub(c, 1, -2)
+				local shade = tonumber(string.sub(c, -1))
+				local col = WorldGen.Palette[palKey][shade]
+				local p = Instance.new("Part")
+				p.Anchored = true
+				p.Size = Vector3.new(d * B, h - floorY, w * B)
+				p.Position = Vector3.new((ix0 + i - 1) * B + d * B / 2, (h + floorY) / 2, (iz0 + k - 1) * B + w * B / 2)
+				p.Color = col
+				p.Material = palKey == "Lava" and Enum.Material.Neon or Enum.Material.Plastic
+				p.TopSurface = Enum.SurfaceType.Studs
+				p.BottomSurface = Enum.SurfaceType.Smooth
+				p.CastShadow = true
+				p.Parent = folder
+			end
+		end
+	end
+	folder.Parent = workspace.World.Blocks
+	chunkBlocks[folder.Name] = folder
+
+	if minH < sea then
+		local x0, z0 = cx * size, cz * size
+		Terrain:FillBlock(CFrame.new(x0 + size / 2, (minH + sea) / 2, z0 + size / 2), Vector3.new(size, sea - minH, size), Enum.Material.Water)
+	end
+end
+
+local function clearTerrain(cx: number, cz: number)
+	local key = WorldGen.ChunkKey(cx, cz)
+	if chunkBlocks[key] then
+		chunkBlocks[key]:Destroy()
+		chunkBlocks[key] = nil
+	end
+	local size = Config.ChunkSize
+	local region = Region3.new(Vector3.new(cx * size, 0, cz * size), Vector3.new((cx + 1) * size, Config.MaxHeight, (cz + 1) * size))
+	Terrain:FillRegion(region:ExpandToGrid(4), 4, Enum.Material.Air)
+end
+
+---------------------------------------------------------------------------
+-- Nodes
+---------------------------------------------------------------------------
+local function weightedPick(weights: { [string]: number }, rng: Random): string?
+	local total = 0
+	local keys = {}
+	for k, w in weights do
+		total += w
+		table.insert(keys, k)
+	end
+	if total <= 0 then
+		return nil
+	end
+	table.sort(keys) -- deterministic order across servers
+	local r = rng:NextNumber() * total
+	for _, k in keys do
+		r -= weights[k]
+		if r <= 0 then
+			return k
+		end
+	end
+	return keys[#keys]
+end
+
+local function spawnNode(key: string, folder: Folder, index: number, nodeType: string, pos: Vector3, rng: Random)
+	local model = NodeFactory.Build(nodeType, pos, rng)
+	model:SetAttribute("Chunk", key)
+	model:SetAttribute("Index", index)
+	model:SetAttribute("Origin", pos)
+	model.Parent = folder
+	return model
+end
+
+local function populate(cx: number, cz: number, key: string, folder: Folder)
+	local rng = Random.new(WorldGen.ChunkSeed(cx, cz))
+	local size = Config.ChunkSize
+	local cxMid, czMid = (cx + 0.5) * size, (cz + 0.5) * size
+	local _, centerBiome = WorldGen.Column(math.floor(cxMid / 4), math.floor(czMid / 4))
+	local count = WorldGen.Biomes[centerBiome].density
+	count = math.max(0, count + rng:NextInteger(-2, 2))
+	local dep = depleted[key]
+	for index = 1, count do
+		local ix = cx * (size // 4) + rng:NextInteger(0, size // 4 - 1)
+		local iz = cz * (size // 4) + rng:NextInteger(0, size // 4 - 1)
+		local x, z = ix * 4 + 2, iz * 4 + 2
+		local h, biome, river = WorldGen.Column(ix, iz)
+		local nodeType = weightedPick(WorldGen.Biomes[biome].nodes, rng)
+		local subSeed = rng:NextInteger(1, 1e9)
+		local poi = WorldGen.POI(cx, cz)
+		local onPoi = poi and math.abs(x - poi.x) < 16 and math.abs(z - poi.z) < 16
+		if nodeType and not river and not onPoi and h > Config.SeaLevel + 0.5 and not WorldGen.InHub(Vector3.new(x, 0, z), 30) then
+			if not (dep and dep[index] and dep[index] > os.time()) then
+				spawnNode(key, folder, index, nodeType, Vector3.new(x, h, z), Random.new(subSeed))
+			end
+		end
+	end
+end
+
+local function buildPOI(cx: number, cz: number, key: string): Folder?
+	local poi = WorldGen.POI(cx, cz)
+	if not poi then
+		return nil
+	end
+	local rng = Random.new(poi.seed)
+	local kind = Structures.PickKind(poi.biome, rng)
+	if not kind then
+		return nil
+	end
+	local x, z, h = poi.x, poi.z, poi.h
+	local folder = Instance.new("Folder")
+	folder.Name = key
+	local model = Structures.Build(kind, Vector3.new(x, h + 0.75, z), rng, key)
+	model.Parent = folder
+	folder.Parent = poiFolder
+
+	local chest = model:FindFirstChild("Chest")
+	local prompt = chest and chest:FindFirstChildOfClass("ProximityPrompt")
+	if prompt then
+		prompt.Triggered:Connect(function(player)
+			WorldService:LootChest(player, key, kind)
+		end)
+	end
+	return folder
+end
+
+function WorldService:LootChest(player: Player, chestId: string, kind: string)
+	chestCooldowns[chestId] = chestCooldowns[chestId] or {}
+	local last = chestCooldowns[chestId][player.UserId]
+	if last and os.time() - last < Config.ChestCooldown then
+		local mins = math.ceil((Config.ChestCooldown - (os.time() - last)) / 60)
+		Remotes.Notify:FireClient(player, "Already looted — refills in " .. mins .. "m", "error")
+		return
+	end
+	chestCooldowns[chestId][player.UserId] = os.time()
+	local loot = Structures.RollLoot(kind, Random.new())
+	local any = false
+	for id, n in loot do
+		S.InventoryService:Add(player, id, n)
+		any = true
+	end
+	if not any then
+		S.InventoryService:Add(player, "Plank", 3)
+	end
+	local profile = S.DataService:Get(player)
+	if profile then
+		profile.stats.chests += 1
+	end
+	Remotes.Notify:FireClient(player, "LOOT!", "big")
+end
+
+---------------------------------------------------------------------------
+-- Chunk lifecycle
+---------------------------------------------------------------------------
+function WorldService:LoadChunk(cx: number, cz: number)
+	local key = WorldGen.ChunkKey(cx, cz)
+	if loaded[key] then
+		return
+	end
+	writeTerrain(cx, cz)
+	local nodes = Instance.new("Folder")
+	nodes.Name = key
+	nodes.Parent = nodesFolder
+	populate(cx, cz, key, nodes)
+	local poi = buildPOI(cx, cz, key)
+	loaded[key] = { cx = cx, cz = cz, nodes = nodes, poi = poi }
+	for _, cb in self._onChunkLoaded do
+		task.spawn(cb, key, cx, cz)
+	end
+end
+
+function WorldService:UnloadChunk(key: string)
+	local c = loaded[key]
+	if not c then
+		return
+	end
+	for _, cb in self._onChunkUnloaded do
+		pcall(cb, key, c.cx, c.cz)
+	end
+	c.nodes:Destroy()
+	if c.poi then
+		c.poi:Destroy()
+	end
+	clearTerrain(c.cx, c.cz)
+	loaded[key] = nil
+end
+
+function WorldService:EnsureArea(pos: Vector3, radius: number)
+	local ccx, ccz = WorldGen.ChunkOf(pos)
+	for dx = -radius, radius do
+		for dz = -radius, radius do
+			self:LoadChunk(ccx + dx, ccz + dz)
+		end
+	end
+end
+
+local function focusPoints(): { Vector3 }
+	local pts = {}
+	for _, p in Players:GetPlayers() do
+		local root = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+		if root then
+			table.insert(pts, root.Position)
+		end
+	end
+	return pts
+end
+
+local function refreshWanted()
+	local pts = focusPoints()
+	local wanted = {}
+	for _, pos in pts do
+		local ccx, ccz = WorldGen.ChunkOf(pos)
+		for dx = -Config.LoadRadius, Config.LoadRadius do
+			for dz = -Config.LoadRadius, Config.LoadRadius do
+				local cx, cz = ccx + dx, ccz + dz
+				local key = WorldGen.ChunkKey(cx, cz)
+				wanted[key] = true
+				if not loaded[key] and not queued[key] then
+					queued[key] = true
+					table.insert(queue, { cx = cx, cz = cz, d = dx * dx + dz * dz })
+				end
+			end
+		end
+	end
+	table.sort(queue, function(a, b)
+		return a.d < b.d
+	end)
+	-- unload chunks nobody is near
+	for key, c in loaded do
+		if not wanted[key] then
+			local far = true
+			for _, pos in pts do
+				local pcx, pcz = WorldGen.ChunkOf(pos)
+				if math.max(math.abs(pcx - c.cx), math.abs(pcz - c.cz)) <= Config.UnloadRadius then
+					far = false
+					break
+				end
+			end
+			if far then
+				WorldService:UnloadChunk(key)
+			end
+		end
+	end
+end
+
+---------------------------------------------------------------------------
+-- Nodes: damage + respawn (called by HarvestService)
+---------------------------------------------------------------------------
+function WorldService:DepleteNode(model: Model)
+	local key, index = model:GetAttribute("Chunk"), model:GetAttribute("Index")
+	local nodeType = model:GetAttribute("NodeType")
+	local origin = model:GetAttribute("Origin")
+	local folder = model.Parent
+	model:Destroy()
+	if not key or not index then
+		return -- event-spawned nodes (meteors) don't respawn
+	end
+	depleted[key] = depleted[key] or {}
+	local respawnAt = os.time() + Config.NodeRespawnSeconds
+	depleted[key][index] = respawnAt
+	task.delay(Config.NodeRespawnSeconds, function()
+		if loaded[key] and folder and folder.Parent and depleted[key] and depleted[key][index] == respawnAt then
+			depleted[key][index] = nil
+			spawnNode(key, folder, index, nodeType, origin, Random.new())
+		end
+	end)
+end
+
+function WorldService:SpawnEventNode(nodeType: string, pos: Vector3): Model
+	local model = NodeFactory.Build(nodeType, pos, Random.new())
+	model:SetAttribute("Event", true)
+	model.Parent = nodesFolder
+	return model
+end
+
+---------------------------------------------------------------------------
+-- Spawning players
+---------------------------------------------------------------------------
+function WorldService:FindLand(near: Vector3?, scatter: number): Vector3
+	local rng = Random.new()
+	for _ = 1, 60 do
+		local x = (near and near.X or 0) + rng:NextNumber(-scatter, scatter)
+		local z = (near and near.Z or 0) + rng:NextNumber(-scatter, scatter)
+		local _, biome = WorldGen.Sample(x, z)
+		local h = WorldGen.Ground(x, z)
+		if biome ~= "Ocean" and biome ~= "Beach" and biome ~= "Peaks" and h > Config.SeaLevel + 2 then
+			return Vector3.new(x, h, z)
+		end
+	end
+	return self.HubCenter
+end
+
+function WorldService:SpawnPointFor(player: Player): Vector3
+	local home = S.FactionService and S.FactionService:HomeFor(player)
+	if home then
+		return home + Vector3.new(6, 0, 6)
+	end
+	local profile = S.DataService:Get(player)
+	if profile and profile.lastPos and not player:GetAttribute("Died") then
+		local p = profile.lastPos
+		return Vector3.new(p[1], WorldGen.Ground(p[1], p[3]), p[3])
+	end
+	-- new players (and the dead without a faction home) start at the hub plaza
+	local a = math.random() * math.pi * 2
+	return self.HubCenter + Vector3.new(math.cos(a) * 30, 1, math.sin(a) * 30)
+end
+
+local function onCharacter(player: Player, char: Model)
+	local root = char:WaitForChild("HumanoidRootPart", 10) :: BasePart
+	if not root then
+		return
+	end
+	S.DataService:WaitFor(player, 15)
+	local spot = WorldService:SpawnPointFor(player)
+	WorldService:EnsureArea(spot, 1)
+	root.CFrame = CFrame.new(spot + Vector3.new(0, 6, 0))
+	player:SetAttribute("Died", nil)
+	-- 60s of fresh-spawn protection during Grace
+	player:SetAttribute("Protected", true)
+	task.delay(60, function()
+		if player.Parent then
+			player:SetAttribute("Protected", nil)
+		end
+	end)
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if hum then
+		hum.Died:Connect(function()
+			player:SetAttribute("Died", true)
+		end)
+	end
+end
+
+---------------------------------------------------------------------------
+function WorldService:Init(services)
+	S = services
+	worldFolder = Instance.new("Folder")
+	worldFolder.Name = "World"
+	worldFolder.Parent = workspace
+	nodesFolder = Instance.new("Folder")
+	nodesFolder.Name = "Nodes"
+	nodesFolder.Parent = worldFolder
+	poiFolder = Instance.new("Folder")
+	poiFolder.Name = "Ruins"
+	poiFolder.Parent = worldFolder
+	local blocks = Instance.new("Folder")
+	blocks.Name = "Blocks"
+	blocks.Parent = worldFolder
+	self.NodesFolder = nodesFolder
+	self.WorldFolder = worldFolder
+
+	-- Bright, saturated "toy world" look: tall animated grass, soft haze, sun rays.
+	pcall(function()
+		Terrain.Decoration = true
+	end)
+	local Lighting = game:GetService("Lighting")
+	Lighting.EnvironmentDiffuseScale = 0.6
+	Lighting.EnvironmentSpecularScale = 0.4
+	local function fx(class, props)
+		local e = Lighting:FindFirstChildOfClass(class) or Instance.new(class)
+		for k, v in props do
+			e[k] = v
+		end
+		e.Parent = Lighting
+	end
+	fx("Atmosphere", { Density = 0.28, Offset = 0.1, Haze = 1.2, Glare = 0.4, Color = Color3.fromRGB(200, 225, 255), Decay = Color3.fromRGB(120, 150, 190) })
+	fx("BloomEffect", { Intensity = 0.35, Size = 28, Threshold = 1.6 })
+	fx("SunRaysEffect", { Intensity = 0.08, Spread = 0.8 })
+	fx("ColorCorrectionEffect", { Saturation = 0.18, Contrast = 0.06, Brightness = 0.02 })
+	fx("DepthOfFieldEffect", { FarIntensity = 0.12, FocusDistance = 120, InFocusRadius = 150, NearIntensity = 0 })
+	if not Lighting:FindFirstChildOfClass("Sky") then
+		local sky = Instance.new("Sky")
+		sky.SunAngularSize = 14
+		sky.MoonAngularSize = 9
+		sky.Parent = Lighting
+	end
+	Terrain.WaterColor = Color3.fromRGB(60, 170, 200)
+	Terrain.WaterTransparency = 0.6
+	Terrain.WaterWaveSize = 0.15
+	Terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(110, 190, 70))
+	Terrain:SetMaterialColor(Enum.Material.LeafyGrass, Color3.fromRGB(70, 150, 60))
+	Terrain:SetMaterialColor(Enum.Material.Mud, Color3.fromRGB(95, 85, 60))
+	Terrain:SetMaterialColor(Enum.Material.Sand, Color3.fromRGB(235, 215, 150))
+
+	-- the spawn hub (also provides the SpawnLocation)
+	local hub = WorldGen.Hub
+	self.HubCenter = Vector3.new(hub.x, hub.h, hub.z)
+	self:EnsureArea(self.HubCenter, 2)
+	local _, stations = Hub.Build(S, worldFolder)
+	self.HubStations = stations
+
+	Players.PlayerAdded:Connect(function(p)
+		p.CharacterAdded:Connect(function(c)
+			onCharacter(p, c)
+		end)
+	end)
+	for _, p in Players:GetPlayers() do
+		p.CharacterAdded:Connect(function(c)
+			onCharacter(p, c)
+		end)
+	end
+end
+
+function WorldService:Start()
+	task.spawn(function()
+		while true do
+			refreshWanted()
+			task.wait(0.75)
+		end
+	end)
+	while true do
+		local done = 0
+		while #queue > 0 and done < Config.ChunksPerStep do
+			local job = table.remove(queue, 1)
+			local key = WorldGen.ChunkKey(job.cx, job.cz)
+			queued[key] = nil
+			self:LoadChunk(job.cx, job.cz)
+			done += 1
+		end
+		task.wait(Config.GenStepDelay)
+	end
+end
+
+return WorldService
