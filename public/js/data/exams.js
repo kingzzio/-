@@ -1,6 +1,7 @@
 // Exams: format info, strategy tips, and which topics feed each practice test.
 // Facts reflect publicly posted formats; always confirm dates/details with the official source linked.
 import { entranceExams, entranceTopics } from "./entrance.js";
+import { moreExams, moreTopics } from "./more-exams.js";
 
 export const extraTopics = [
   {
@@ -191,5 +192,5 @@ export const exams = [
 ];
 
 // HSPT, ISEE, SSAT and Hunter live in entrance.js.
-exams.push(...entranceExams);
-extraTopics.push(...entranceTopics);
+exams.push(...entranceExams, ...moreExams);
+extraTopics.push(...entranceTopics, ...moreTopics);

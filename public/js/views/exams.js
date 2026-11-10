@@ -13,7 +13,9 @@ const groups = [
   ["Math Regents", ["regents-alg1", "regents-geo", "regents-alg2"]],
   ["Science Regents", ["regents-bio", "regents-es", "regents-chem", "regents-phys"]],
   ["ELA & Social Studies Regents", ["regents-ela", "regents-global", "regents-us"]],
-  ["College", ["sat"]],
+  ["College", ["sat", "act", "psat89"]],
+  ["NYS Grade 8 tests", ["nys8"]],
+  ["AP Exams", ["ap-calc-ab", "ap-precalc", "ap-stats", "ap-bio", "apush", "ap-world", "ap-psych", "ap-lang", "ap-hug", "ap-csp"]],
 ];
 
 export function examList(root) {

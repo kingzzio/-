@@ -241,4 +241,59 @@ export const entranceGenerators = {
     const n = int(r, 3, 9);
     return fixed(`n is a positive whole number less than ${n}.\nColumn A: n\nColumn B: ${n}`, C, 1, `Every possible n is less than ${n}, so Column B is always greater.`);
   },
+
+  // ---------- ACT / AP ----------
+  "data-table": (r) => {
+    // ACT Science-style: read an experiment table and reason about the trend.
+    const setups = [
+      ["Temperature of water (°C)", "Sugar dissolved (g)", [20, 40, 60, 80], (x) => 2 * x + 160, "dissolves more sugar"],
+      ["Ramp height (cm)", "Cart speed at bottom (cm/s)", [10, 20, 30, 40], (x) => 4 * x + 20, "the cart is faster"],
+      ["Light intensity (units)", "O₂ bubbles per minute", [1, 2, 3, 4], (x) => 6 * x + 2, "the plant makes more oxygen"],
+      ["Altitude (km)", "Air temperature (°C)", [0, 2, 4, 6], (x) => 15 - 6.5 * x, "the air gets colder"],
+    ];
+    const [xl, yl, xs, f, up] = pick(r, setups);
+    const ys = xs.map(f);
+    const table = `${xl}: ${xs.join(" | ")}\n${yl}: ${ys.map((y) => (Number.isInteger(y) ? y : y.toFixed(1))).join(" | ")}`;
+    const kind = int(r, 0, 1);
+    if (kind === 0) {
+      const rising = ys[3] > ys[0];
+      return choice4(r, `A student recorded these results:\n${table}\nAs ${xl.split(" (")[0].toLowerCase()} increases, ${yl.split(" (")[0].toLowerCase()}…`, rising ? "increases" : "decreases", [rising ? "decreases" : "increases", "stays the same", "increases, then decreases"], `Read across the table: ${ys[0]} → ${ys[3]}. As x goes up, ${up}.`);
+    }
+    const mid = (xs[1] + xs[2]) / 2, y = f(mid);
+    const fmt = (v) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
+    return choice4(r, `A student recorded these results:\n${table}\nWhat value would you predict for ${xl.split(" (")[0].toLowerCase()} = ${mid}?`, fmt(y), [fmt(f(xs[1])), fmt(f(xs[2])), fmt(y + (y > 0 ? 25 : -25))], `${mid} is halfway between ${xs[1]} and ${xs[2]}, so the answer is about halfway between ${fmt(f(xs[1]))} and ${fmt(f(xs[2]))}: ${fmt(y)}.`);
+  },
+  "integral-def": (r) => {
+    const n = int(r, 1, 3), a = int(r, 1, 4), b = int(r, 2, 4);
+    // ∫₀^b a·xⁿ dx = a·b^(n+1)/(n+1)
+    const val = (a * b ** (n + 1)) / (n + 1);
+    const gcd = (x, y) => (y ? gcd(y, x % y) : x);
+    const top = a * b ** (n + 1), g = gcd(top, n + 1);
+    const fmt = (v) => (Number.isInteger(v) ? String(v) : `${top / g}/${(n + 1) / g}`);
+    const sup = n === 1 ? "" : "⁰¹²³⁴⁵"[n];
+    return choice4(r, `Evaluate ∫₀^${b} ${a === 1 ? "" : a}x${sup} dx`, fmt(val), [String(a * b ** n), String(a * n * b ** (n - 1)), String(a * b ** (n + 1)), String(a * b ** (n + 1) * (n + 1)), String(a * b ** (n + 1) + 1)], `Power rule: ∫ ${a}x${sup} dx = ${a}x^${n + 1}/${n + 1}. Plug in ${b} and 0: ${a}·${b}^${n + 1}/${n + 1} = ${fmt(val)}.`);
+  },
+  "z-score": (r) => {
+    const mean = pick(r, [50, 60, 70, 75, 80]), sd = pick(r, [4, 5, 8, 10]), z = pick(r, [-2, -1.5, -1, 1, 1.5, 2]);
+    const x = mean + z * sd;
+    return choice4(r, `Test scores have a mean of ${mean} and a standard deviation of ${sd}. What is the z-score of a score of ${x}?`, String(z), [String(-z), String(z * 2), String(x - mean)], `z = (x − mean) ÷ SD = (${x} − ${mean}) ÷ ${sd} = ${z}.`);
+  },
+  binary: (r) => {
+    const n = int(r, 5, 63);
+    const b = n.toString(2);
+    if (r() < 0.5) return choice4(r, `What is the binary number ${b} in decimal?`, String(n), [String(n + 1), String(n - 2), String(parseInt(b.split("").reverse().join(""), 2))], `Add the place values that have a 1: ${b.split("").map((d, i) => (d === "1" ? 2 ** (b.length - 1 - i) : 0)).filter(Boolean).join(" + ")} = ${n}.`);
+    return choice4(r, `What is the decimal number ${n} in binary?`, b, [(n + 1).toString(2), (n - 1).toString(2), b.split("").reverse().join("") === b ? (n + 2).toString(2) : b.split("").reverse().join("")], `Break ${n} into powers of 2 and write a 1 for each one used: ${b}.`);
+  },
+  boolean: (r) => {
+    const A = r() < 0.5, B = r() < 0.5, C = r() < 0.5;
+    const forms = [
+      [`(A AND B) OR C`, (A && B) || C],
+      [`A AND (NOT B)`, A && !B],
+      [`NOT (A OR B)`, !(A || B)],
+      [`(A OR B) AND (NOT C)`, (A || B) && !C],
+      [`NOT A OR (B AND C)`, !A || (B && C)],
+    ];
+    const [expr, val] = pick(r, forms);
+    return fixed(`A = ${A}, B = ${B}, C = ${C}.\nWhat does ${expr} evaluate to?`, ["true", "false", "an error", "it depends"], val ? 0 : 1, `Evaluate the parentheses first, then NOT, AND, OR. ${expr} → ${val}.`);
+  },
 };

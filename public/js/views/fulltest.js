@@ -1,8 +1,8 @@
 // Full-length practice tests: every section in order, each on its own timer, like test day.
 // Ends with a section-by-section report (with the SSAT's −¼ guessing penalty where it applies).
 import { state, save, addXp } from "../store.js";
-import { esc, confetti, celebrateBadges, toast } from "../ui.js";
-import { getExam, buildQuiz } from "../content.js";
+import { esc, confetti, celebrateBadges, toast, aiAvailable, aiQuiz } from "../ui.js";
+import { getExam, buildQuiz, examTopicIds } from "../content.js";
 import { runQuiz } from "./study.js";
 
 const fmt = (ms) => {
@@ -44,12 +44,12 @@ export default function fullTest(root, { id }) {
 
   const start = (scale) => {
     const results = [];
-    const runSection = (k) => {
+    const runSection = async (k) => {
       const sec = e.fullTest[k];
-      const topics = e.sections[sec.from ?? k].topics;
+      const topics = sec.all ? examTopicIds(e) : e.sections[sec.from ?? k].topics;
       const n = Math.max(5, Math.round(sec.questions * scale));
       const minutes = Math.max(4, Math.round(sec.minutes * scale));
-      const qs = buildQuiz(topics, n);
+      const qs = await topUp(buildQuiz(topics, n), n, sec);
       cleanup = runQuiz(root, qs, {
         title: `${e.name} · ${sec.name} (${k + 1}/${e.fullTest.length})`,
         mode: "test",
@@ -57,13 +57,28 @@ export default function fullTest(root, { id }) {
         silent: true,
         back: `#/exam/${e.id}`,
         onFinish: (r) => {
-          results.push({ ...r, name: sec.name, from: sec.from ?? k });
+          results.push({ ...r, name: sec.name, from: sec.all ? null : sec.from ?? k });
           if (k + 1 < e.fullTest.length) pause(k + 1, results, scale, runSection);
           else report(results, scale);
         },
       });
     };
     runSection(0);
+  };
+
+  // Small question banks (e.g. AP Psychology) get topped up with AI-written questions when AI is on.
+  const topUp = async (qs, n, sec) => {
+    if (qs.length >= n || !(await aiAvailable())) return qs;
+    root.innerHTML = `<div class="empty"><div class="spinner"></div><p>Writing more ${esc(e.name)} ${esc(sec.name)} questions…</p></div>`;
+    const extra = [];
+    for (let tries = 0; tries < 3 && qs.length + extra.length < n; tries++) {
+      try {
+        extra.push(...(await aiQuiz({ topic: `${e.name}: ${sec.name}${tries ? " (new questions, different subtopics)" : ""}`, count: Math.min(10, n - qs.length - extra.length), grade: state.profile.grade })));
+      } catch {
+        break;
+      }
+    }
+    return [...qs, ...extra];
   };
 
   const pause = (k, results, scale, runSection) => {
@@ -94,7 +109,7 @@ export default function fullTest(root, { id }) {
     });
     const raw = penalty ? right - penalty * wrong : right;
     const pct = total ? Math.round((right / total) * 100) : 0;
-    const weakest = [...rows].sort((a, b) => a.pct - b.pct)[0];
+    const weakest = rows.length > 1 ? [...rows].sort((a, b) => a.pct - b.pct)[0] : null;
     state.tests.unshift({ exam: e.id, section: scale === 1 ? "Full test" : "Half test", correct: right, total, pct, at: Date.now() });
     state.tests = state.tests.slice(0, 50);
     celebrateBadges(addXp(60 + right * 2));
@@ -117,7 +132,7 @@ export default function fullTest(root, { id }) {
           )
           .join("")}</div>
         ${!penalty && blank ? `<div class="card warn small">You left <strong>${blank}</strong> blank. On the ${esc(e.name)} there's no penalty for guessing, so those were free chances. Always bubble something.</div>` : ""}
-        ${weakest ? `<div class="card"><strong>Biggest win available: ${esc(weakest.name)}</strong><p class="small muted">Your lowest section at ${weakest.pct}%. A focused drill there moves your total the most.</p><a class="btn" href="#/test/${e.id}?section=${weakest.from}">Drill ${esc(weakest.name)} →</a></div>` : ""}
+        ${weakest ? `<div class="card"><strong>Biggest win available: ${esc(weakest.name)}</strong><p class="small muted">Your lowest section at ${weakest.pct}%. A focused drill there moves your total the most.</p><a class="btn" href="#/test/${e.id}${weakest.from === null ? "" : `?section=${weakest.from}`}">Drill ${esc(weakest.name)} →</a></div>` : ""}
         <p class="tiny muted">Practice score from BrainBoro questions, not an official scaled score or percentile.</p>
         <div class="btn-row wrap"><button class="btn ghost" id="again">Take another</button><a class="btn ghost" href="#/exam/${e.id}">Done</a></div>
       </div>`;
