@@ -638,3 +638,30 @@ details summary { cursor: pointer; font-weight: 650; margin: 6px 0; }
 .pod span { font-size: 12px; color: var(--muted); }
 .pod-col { width: 100%; border-radius: 12px 12px 4px 4px; display: grid; place-items: center; color: #fff; font: 800 26px var(--display); }
 .p1 .pod-col { background: #f5b301; } .p2 .pod-col { background: #9aa3b5; } .p3 .pod-col { background: #c47a3a; }
+
+/* ---------- Pace coach ---------- */
+.pace { font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 999px; background: var(--card-2); color: var(--muted); white-space: nowrap; }
+.pace.on { background: var(--good-bg); color: var(--good); }
+.pace.ahead { background: var(--brand-soft); color: var(--brand); }
+.pace.behind { background: var(--bad-bg); color: var(--bad); animation: pulse 1.4s infinite; }
+
+/* ---------- Full-length tests ---------- */
+.ft-sections { margin: 12px 0; text-align: left; }
+.ft-n { width: 30px; height: 30px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; font-weight: 800; flex: none; }
+.ft-report { display: grid; gap: 12px; text-align: left; margin-top: 12px; }
+.ft-row { display: flex; align-items: center; gap: 10px; }
+.ft-row small { display: block; color: var(--muted); font-size: 12px; }
+.ft-bar { width: 90px; flex: none; }
+.ft-pct { width: 44px; text-align: right; }
+
+/* ---------- Scholarship Hunt ---------- */
+.sch { display: grid; gap: 6px; }
+.sch-top { display: flex; align-items: center; gap: 10px; }
+.sch-top small { display: block; color: var(--muted); font-size: 12.5px; }
+.sch-count { min-width: 58px; padding: 6px 8px; border-radius: 14px; background: var(--brand-soft); color: var(--brand); font: 800 22px/1 var(--display); text-align: center; display: grid; }
+.sch-count small { font: 600 10px var(--font); text-transform: uppercase; letter-spacing: .04em; }
+.sch-count.soon { background: var(--bad-bg); color: var(--bad); }
+.sch-date { margin: 0; font-weight: 600; }
+.sch p.small, .sch p.tiny { margin: 0; }
+.testday { background: linear-gradient(120deg, var(--brand-soft), var(--card)); border-color: transparent; }
+.big-num { font: 800 38px/1 var(--display); color: var(--brand); min-width: 56px; text-align: center; }

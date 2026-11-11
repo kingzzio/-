@@ -113,7 +113,7 @@ export function runQuiz(root, questions, opts) {
     <div class="study-top">
       <a class="back" href="${back}" aria-label="Quit">✕</a>
       <div class="bar thin grow"><div class="bar-fill" style="width:${(i / questions.length) * 100}%"></div></div>
-      ${deadline ? `<span class="timer" id="timer">${fmtTime(deadline - Date.now())}</span>` : `<span class="combo ${combo >= 2 ? "hot" : ""}">🔥 ${combo}</span>`}
+      ${deadline ? `<span class="pace" id="pace" title="Pace coach: are you on track to finish in time?"></span><span class="timer" id="timer">${fmtTime(deadline - Date.now())}</span>` : `<span class="combo ${combo >= 2 ? "hot" : ""}">🔥 ${combo}</span>`}
     </div>
     <p class="muted small center">${esc(title)} • Question ${i + 1} of ${questions.length}</p>`;
 
@@ -197,6 +197,11 @@ export function runQuiz(root, questions, opts) {
 
   const finish = () => {
     clearInterval(timer);
+    // Section of a full-length test: hand the result back without a results screen.
+    if (opts.silent) {
+      addXp(correct * 5);
+      return onFinish?.({ correct, total: questions.length, timeMs: Date.now() - started, answers }, null);
+    }
     const total = questions.length;
     const timeMs = Date.now() - started;
     const perfect = correct === total && total > 0;
@@ -245,6 +250,18 @@ export function runQuiz(root, questions, opts) {
       if (el) {
         el.textContent = fmtTime(Math.max(0, left));
         el.classList.toggle("low", left < 60000);
+      }
+      // Pace coach: compare questions done with where you'd be at an even pace.
+      const pace = root.querySelector("#pace");
+      if (pace) {
+        const due = (Date.now() - started) / ((minutes * 60000) / questions.length);
+        const diff = i - due;
+        const [cls, txt] = diff >= 1.5 ? ["ahead", "⚡ Ahead"] : diff <= -1.5 ? ["behind", "🐢 Speed up"] : ["on", "✅ On pace"];
+        if (pace.dataset.s !== cls) {
+          pace.dataset.s = cls;
+          pace.className = `pace ${cls}`;
+          pace.textContent = txt;
+        }
       }
       if (left <= 0) {
         clearInterval(timer);

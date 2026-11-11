@@ -8,17 +8,21 @@ import { revealHtml, shareScore } from "../score.js";
 import { resourcesFor } from "../data/resources.js";
 
 const groups = [
-  ["High school admissions", ["shsat", "tachs"]],
+  ["High school admissions", ["shsat", "tachs", "hspt", "hunter"]],
+  ["Private & scholarship exams", ["isee", "ssat"]],
   ["Math Regents", ["regents-alg1", "regents-geo", "regents-alg2"]],
   ["Science Regents", ["regents-bio", "regents-es", "regents-chem", "regents-phys"]],
   ["ELA & Social Studies Regents", ["regents-ela", "regents-global", "regents-us"]],
-  ["College", ["sat"]],
+  ["College", ["sat", "act", "psat89"]],
+  ["NYS Grade 8 tests", ["nys8"]],
+  ["AP Exams", ["ap-calc-ab", "ap-precalc", "ap-stats", "ap-bio", "apush", "ap-world", "ap-psych", "ap-lang", "ap-hug", "ap-csp"]],
 ];
 
 export function examList(root) {
   root.innerHTML = `
     <h1 class="page-title">Tests</h1>
     <p class="lead">Pick your test for timed practice, section drills and strategy tips.</p>
+    <a class="card banner" href="#/scholarships"><span class="tile-ic" style="--accent:#0ea5e9">🎓</span><span class="grow"><strong>Scholarship Hunt</strong><small>Regis, Fordham Prep, Spellman, Stepinac and more: dates, countdowns and the right practice test</small></span></a>
     ${groups
       .map(
         ([name, ids]) => `<section class="section"><div class="section-head"><h2>${name}</h2></div><div class="list">${ids
@@ -48,7 +52,7 @@ export function examPage(root, { id }) {
       <h1>${esc(e.name)}</h1>
       <p>${esc(e.who)}</p>
       <div class="btn-row wrap">
-        <a class="btn" href="#/test/${e.id}">⏱️ Timed practice test (${e.mock.questions} Qs, ${e.mock.minutes} min)</a>
+        ${e.fullTest ? `<a class="btn" href="#/fulltest/${e.id}">📝 Full-length practice test</a><a class="btn ghost" href="#/test/${e.id}">⏱️ Quick test (${e.mock.questions} Qs)</a>` : `<a class="btn" href="#/test/${e.id}">⏱️ Timed practice test (${e.mock.questions} Qs, ${e.mock.minutes} min)</a>`}
         ${state.profile.exam === e.id ? `<span class="tag">⭐ Your test</span>` : `<button class="btn ghost" id="set">⭐ Make this my test</button>`}
       </div>
       ${best ? `<p class="small">Best practice score: <strong>${best.pct}%</strong> (${best.correct}/${best.total})</p>` : ""}

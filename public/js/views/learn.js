@@ -24,6 +24,7 @@ export default function learn(root) {
       </section>
 
       <div class="list">
+        <a class="row" href="#/scholarships"><span class="tile-ic" style="--accent:#0ea5e9">🎓</span><span class="grow"><strong>Scholarship Hunt</strong><small>HSPT, ISEE, SSAT, Hunter: NY school exam dates + full practice tests</small></span><span class="chev">${icon("chevron")}</span></a>
         <a class="row" href="#/live"><span class="tile-ic" style="--accent:#7c3aed">${icon("users")}</span><span class="grow"><strong>BrainBoro Live</strong><small>Class game: join with a PIN, fastest right answers win</small></span><span class="chev">${icon("chevron")}</span></a>
         <a class="row" href="#/boroscore"><span class="tile-ic" style="--accent:#12a150">${icon("gauge")}</span><span class="grow"><strong>BoroScore</strong><small>Get a skill to 100. Past 90 is the Challenge Zone</small></span><span class="chev">${icon("chevron")}</span></a>
         <a class="row" href="#/coach"><span class="tile-ic" style="--accent:#ff4f8b">${icon("eye")}</span><span class="grow"><strong>Screen Coach</strong><small>Boro watches your IXL / DeltaMath screen and works it through with you</small></span><span class="chev">${icon("chevron")}</span></a>

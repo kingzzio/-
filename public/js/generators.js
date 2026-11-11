@@ -1,4 +1,5 @@
 // Procedural math question generators — unlimited practice.
+import { entranceGenerators } from "./gen-entrance.js";
 // Every generator takes a seeded RNG so a "Brain Battle" link reproduces the same questions for a friend.
 
 export function makeRng(seed) {
@@ -460,6 +461,8 @@ export const generators = {
     return mc(r, `On a map, 1 inch represents ${s} miles. Two towns are ${inches} inches apart on the map. How far apart are they really?`, s * inches, [s + inches, s / inches, s * inches * 2], `Multiply by the scale: ${inches} × ${s} = ${s * inches} miles.`, (x) => `${round(x, 1)} mi`);
   },
 };
+
+Object.assign(generators, entranceGenerators);
 
 export const generatorNames = Object.keys(generators);
 

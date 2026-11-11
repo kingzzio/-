@@ -4,6 +4,7 @@ import { icon } from "../icons.js";
 import { exams, getExam, getTopic, examTopicIds, subjects, topics } from "../content.js";
 import { user } from "../account.js";
 import { installCard, wireInstall } from "../install.js";
+import { testDay } from "./scholarships.js";
 
 const BORO_COLORS = { Manhattan: "#6d4aff", Brooklyn: "#ff4f8b", Queens: "#12a150", "The Bronx": "#ff8a00", "Staten Island": "#0ea5e9" };
 
@@ -48,6 +49,13 @@ export default function home(root) {
     </div>
     <div class="goal"><div class="goal-label"><span>Daily goal · Lv ${lp.lv} ${esc(levelName(lp.lv))}</span><span>${xpToday()} / ${state.goal.daily} XP</span></div><div class="bar"><div class="bar-fill" style="width:${goalPct}%"></div></div></div>
   </a>
+
+  ${(() => {
+    const td = testDay();
+    return td
+      ? `<a class="card banner testday" href="#/fulltest/${td.exam}"><span class="big-num">${td.days}</span><span class="grow"><strong>${td.days === 0 ? "Test day is TODAY 💪" : `day${td.days === 1 ? "" : "s"} until ${esc(td.name)}`}</strong><small>Tap for a timed practice test</small></span><span class="chev">${icon("chevron")}</span></a>`
+      : `<a class="card banner" href="#/scholarships"><span class="tile-ic" style="--accent:#0ea5e9">🎓</span><span class="grow"><strong>Scholarship Hunt</strong><small>NY scholarship &amp; entrance exams: dates, countdowns, practice</small></span><span class="chev">${icon("chevron")}</span></a>`;
+  })()}
 
   <a class="card daily ${daily ? "done" : ""}" href="#/daily">
     <div class="daily-emoji">${daily ? "✅" : "⚡"}</div>
