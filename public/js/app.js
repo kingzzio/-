@@ -21,6 +21,15 @@ import admin from "./views/admin.js";
 import aicheck from "./views/aicheck.js";
 import coach from "./views/coach.js";
 import fullTest from "./views/fulltest.js";
+import settingsView from "./views/settings.js";
+import { statsView, wrappedView, badgesView, reportView } from "./views/progress.js";
+import { petView, bossView, focusView } from "./views/fun.js";
+import { pathView, lessonView, planView, formulasView } from "./views/learnmore.js";
+import { decksView, deckStudy } from "./views/decks.js";
+import { inviteView, challengeView, squadsView } from "./views/social.js";
+import { loadConfig, flagOn, trackFeature } from "./appconfig.js";
+import { applySettings } from "./fx.js";
+import "./quests.js";
 import scholarships from "./views/scholarships.js";
 import live from "./views/live.js";
 import { boroscoreList, boroscoreRoute } from "./views/boroscore.js";
@@ -66,6 +75,23 @@ const routes = [
   ["coach", coach],
   ["fulltest/:id", fullTest],
   ["scholarships", scholarships],
+  ["settings", settingsView],
+  ["stats", statsView],
+  ["wrapped", wrappedView],
+  ["badges", badgesView],
+  ["report", reportView],
+  ["pet", petView],
+  ["boss/:id", bossView],
+  ["focus", focusView],
+  ["path", pathView],
+  ["lesson/:id", lessonView],
+  ["plan", planView],
+  ["formulas", formulasView],
+  ["decks", decksView],
+  ["deck/:id", deckStudy],
+  ["invite", inviteView],
+  ["challenge", challengeView],
+  ["squads", squadsView],
   ["live", live],
   ["boroscore", boroscoreList],
   ["boroscore/:id", boroscoreRoute],
@@ -79,9 +105,12 @@ const tabs = [
   ["me", "user", "Me"],
 ];
 // Which tab lights up for each page.
-const TAB_OF = { topic: "learn", flash: "learn", quiz: "learn", practice: "learn", explore: "learn", exams: "learn", exam: "learn", test: "learn", curriculum: "learn", resources: "learn", cheats: "learn", cheat: "learn", blitz: "learn", review: "", daily: "", battle: "", connect: "planner", solve: "", answer: "", essay: "", premium: "me", admin: "me", aicheck: "me", coach: "tutor", fulltest: "learn", scholarships: "learn", live: "learn", boroscore: "learn", leaderboard: "", login: "me", mistakes: "me" };
+const TAB_OF = { topic: "learn", flash: "learn", quiz: "learn", practice: "learn", explore: "learn", exams: "learn", exam: "learn", test: "learn", curriculum: "learn", resources: "learn", cheats: "learn", cheat: "learn", blitz: "learn", review: "", daily: "", battle: "", connect: "planner", solve: "", answer: "", essay: "", premium: "me", admin: "me", aicheck: "me", coach: "tutor", fulltest: "learn", scholarships: "learn", settings: "me", stats: "me", wrapped: "me", badges: "me", report: "me", pet: "", boss: "learn", focus: "", path: "learn", lesson: "learn", plan: "learn", formulas: "learn", decks: "learn", deck: "learn", invite: "me", challenge: "", squads: "", live: "learn", boroscore: "learn", leaderboard: "", login: "me", mistakes: "me" };
 
 let cleanup = null;
+// Route → admin feature switch.
+const FEATURE_OF_ROUTE = { answer: "answer", solve: "answer", tutor: "tutor", coach: "coach", essay: "essay", live: "live", blitz: "blitz", battle: "battle", leaderboard: "leaderboard", cheats: "cheats", cheat: "cheats", scholarships: "scholarships", squads: "squads", challenge: "challenge", lesson: "ai" };
+const AI_ROUTES = new Set(["answer", "solve", "tutor", "coach", "essay", "lesson"]);
 
 function parseHash() {
   const raw = location.hash.replace(/^#\/?/, "");
@@ -137,6 +166,15 @@ function render() {
   renderChrome(path);
   main.innerHTML = "";
   window.scrollTo(0, 0);
+  const root = path.split("/")[0] || "home";
+  trackFeature(root);
+  // Admin can switch features off (e.g. to save the AI quota or fix something).
+  const gate = FEATURE_OF_ROUTE[root];
+  if (gate && (!flagOn(gate) || (AI_ROUTES.has(root) && !flagOn("ai")))) {
+    main.innerHTML = `<div class="empty"><div class="big-emoji">🛠️</div><h2>Taking a quick break</h2><p class="muted">This feature is paused right now. Try again soon!</p><a class="btn" href="#/">Go home</a></div>`;
+    return;
+  }
+  main.classList.add("enter");
   if (!found) {
     main.innerHTML = `<div class="empty"><div class="big-emoji">🧭</div><h2>Page not found</h2><a class="btn" href="#/">Go home</a></div>`;
     return;
@@ -196,6 +234,17 @@ window.addEventListener("hashchange", render);
 onChange(() => renderChrome(parseHash().path));
 window.addEventListener("brainboro:theme", applyTheme);
 window.addEventListener("brainboro:rerender", render);
+window.addEventListener("brainboro:settings", applySettings);
+// Remember a friend's invite code from links like #/login?ref=ABC123.
+{
+  const ref = new URLSearchParams(location.hash.split("?")[1] || "").get("ref");
+  if (ref && /^[0-9A-Za-z]{4,10}$/.test(ref)) {
+    state.pendingRef = ref.toUpperCase();
+    save();
+  }
+}
+applySettings();
+loadConfig();
 // Hairline under the top bar once you scroll.
 const topbar = document.querySelector(".topbar");
 addEventListener("scroll", () => topbar.classList.toggle("scrolled", scrollY > 4), { passive: true });

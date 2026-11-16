@@ -23,6 +23,15 @@ const fresh = () => ({
   account: null,
   blitz: { best: 0 },
   answers: [],
+  coins: 0,
+  freezes: 0,
+  owned: [],
+  pet: { name: "Boro", outfit: "", happy: 0, fedOn: "" },
+  history: {},
+  quests: { date: "", list: [], claimed: false },
+  decks: [],
+  settings: { sound: true, haptics: true, textSize: "m", readable: false, reduceMotion: false, accent: "", readAloud: false },
+  device: "",
   answerPlatform: "",
   boroscore: {},
   essay: null,
@@ -44,6 +53,9 @@ function load() {
       premium: { ...base.premium, ...data.premium },
       planner: { ...base.planner, ...data.planner },
       blitz: { ...base.blitz, ...data.blitz },
+      pet: { ...base.pet, ...data.pet },
+      quests: { ...base.quests, ...data.quests },
+      settings: { ...base.settings, ...data.settings },
     };
   } catch {
     return fresh();
@@ -82,12 +94,18 @@ export const levelProgress = () => {
 const LEVEL_NAMES = ["Rookie", "Learner", "Scholar", "Brainiac", "Genius", "Mastermind", "Legend", "Boro Boss"];
 export const levelName = (lv = level()) => LEVEL_NAMES[Math.min(LEVEL_NAMES.length - 1, Math.floor((lv - 1) / 3))];
 
-// Studying today keeps the streak alive.
+// Studying today keeps the streak alive. A streak freeze covers one missed day.
 function touchStreak() {
   const today = todayKey();
   if (state.streak.last === today) return;
   const yesterday = todayKey(new Date(Date.now() - DAY));
-  state.streak.count = state.streak.last === yesterday ? state.streak.count + 1 : 1;
+  const twoAgo = todayKey(new Date(Date.now() - 2 * DAY));
+  const frozen = state.streak.last === twoAgo && state.freezes > 0 && state.streak.count > 0;
+  if (frozen) {
+    state.freezes--;
+    emit("bb:freeze", {});
+  }
+  state.streak.count = state.streak.last === yesterday || frozen ? state.streak.count + 1 : 1;
   state.streak.best = Math.max(state.streak.best, state.streak.count);
   state.streak.last = today;
 }
@@ -101,9 +119,33 @@ export function xpToday() {
 }
 
 /** Adds XP and returns any newly earned badges. */
+// Events other modules listen to (quests, sounds, analytics) without import cycles.
+export const emit = (name, detail) => typeof window !== "undefined" && window.dispatchEvent(new CustomEvent(name, { detail }));
+
+// Admin "Double XP" multiplier, set from the app config.
+let xpMult = 1;
+export const setXpMult = (m) => (xpMult = m > 1 ? m : 1);
+export const getXpMult = () => xpMult;
+
+/** Today's activity row for the stats page. */
+export function historyToday() {
+  const k = todayKey();
+  return (state.history[k] ||= { xp: 0, answered: 0, correct: 0, min: 0 });
+}
+
 export function addXp(amount) {
   touchStreak();
+  amount = Math.round(amount * xpMult);
+  const before = state.xp, lvBefore = level(before);
   state.xp += amount;
+  // 1 coin for every 10 XP earned.
+  state.coins += Math.floor(state.xp / 10) - Math.floor(before / 10);
+  historyToday().xp += amount;
+  // Keep about a year of history.
+  const keys = Object.keys(state.history);
+  if (keys.length > 400) for (const k of keys.sort().slice(0, keys.length - 400)) delete state.history[k];
+  if (level() > lvBefore) emit("bb:levelup", { lv: level() });
+  emit("bb:xp", { amount });
   const today = todayKey();
   if (state.goal.date !== today) {
     state.goal.date = today;
@@ -119,6 +161,10 @@ export function recordAnswer(q, choiceIndex) {
   const correct = choiceIndex === q.a;
   state.stats.answered++;
   if (correct) state.stats.correct++;
+  const h = historyToday();
+  h.answered++;
+  if (correct) h.correct++;
+  emit("bb:answer", { q, ok: correct });
   if (q.topicId) {
     const t = (state.topics[q.topicId] ||= { answered: 0, correct: 0, last: 0 });
     t.answered++;
@@ -149,6 +195,7 @@ export function reviewCard(id, knewIt) {
   c.box = knewIt ? Math.min(BOX_DAYS.length - 1, c.box + 1) : 0;
   c.due = Date.now() + BOX_DAYS[c.box] * DAY;
   state.stats.cardsReviewed++;
+  emit("bb:card", { knewIt });
   save();
 }
 export const cardDue = (id) => !state.cards[id] || state.cards[id].due <= Date.now();
@@ -171,6 +218,14 @@ export const BADGES = [
   { id: "hacker", emoji: "🕹️", name: "Code Breaker", desc: "Watch 5 Cheat Codes", test: (s) => s.stats.cheatCodes >= 5 },
   { id: "on-time", emoji: "📅", name: "Never Late", desc: "Finish 10 assignments", test: (s) => s.stats.tasksDone >= 10 },
   { id: "level-5", emoji: "🧠", name: "Big Brain", desc: "Reach level 5", test: (s) => level(s.xp) >= 5 },
+  { id: "level-10", emoji: "👑", name: "Royalty", desc: "Reach level 10", test: (s) => level(s.xp) >= 10 },
+  { id: "boss-slayer", emoji: "🐉", name: "Boss Slayer", desc: "Defeat a boss battle", test: (s) => (s.stats.bosses || 0) >= 1 },
+  { id: "quest-master", emoji: "🗝️", name: "Quest Master", desc: "Finish all daily quests 5 times", test: (s) => (s.stats.questDays || 0) >= 5 },
+  { id: "focused", emoji: "🎧", name: "Deep Focus", desc: "Finish a focus session", test: (s) => (s.stats.focus || 0) >= 1 },
+  { id: "lesson-learner", emoji: "📚", name: "Lesson Learner", desc: "Finish 3 mini lessons", test: (s) => (s.stats.lessons || 0) >= 3 },
+  { id: "deck-builder", emoji: "🗂️", name: "Deck Builder", desc: "Make your own flashcard deck", test: (s) => (s.decks || []).length >= 1 },
+  { id: "rich", emoji: "🪙", name: "Coin Collector", desc: "Save up 200 coins", test: (s) => (s.coins || 0) >= 200 },
+  { id: "squad-up", emoji: "🤝", name: "Squad Up", desc: "Join a study squad", test: (s) => Boolean(s.squad) },
 ];
 
 export function checkBadges() {

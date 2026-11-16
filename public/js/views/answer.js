@@ -52,7 +52,12 @@ export default function answer(root, _p, query) {
       save();
       root.querySelectorAll("[data-p]").forEach((x) => x.classList.toggle("on", x === b));
     }));
-    root.querySelector("#txt").onkeydown = (e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), run());
+    root.querySelector("#txt").onkeydown = (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        run();
+      }
+    };
     root.querySelector("#clear")?.addEventListener("click", () => ((state.answers = []), save(), drawStart()));
     root.querySelectorAll("[data-h]").forEach((b) => (b.onclick = () => drawResults({ problems: [state.answers[Number(b.dataset.h)]] }, null)));
   };

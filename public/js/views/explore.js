@@ -92,6 +92,8 @@ export function topicPage(root, { id }) {
     <div class="actions">
       <a class="action" href="#/flash/${t.id}"><span class="em">🃏</span><strong>Flashcards</strong><small>${t.cards.length} cards</small></a>
       <a class="action" href="#/quiz/${t.id}"><span class="em">✅</span><strong>Quiz</strong><small>10 questions</small></a>
+      <a class="action" href="#/lesson/${t.id}"><span class="em">📚</span><strong>2-min lesson</strong><small>Learn it first</small></a>
+      <a class="action" href="#/boss/${t.id}"><span class="em">🐉</span><strong>Boss battle</strong><small>Beat it to win coins</small></a>
       ${t.gen?.length || t.qs.length >= 8 ? `<a class="action" href="#/boroscore/${t.id}"><span class="em">💯</span><strong>BoroScore</strong><small>Get it to 100</small></a>` : ""}
       ${t.gen?.length ? `<a class="action" href="#/practice/${t.id}"><span class="em">♾️</span><strong>Unlimited practice</strong><small>Fresh problems every time</small></a>` : ""}
       <a class="action" href="#/quiz/${t.id}?ai=1"><span class="em">✨</span><strong>AI quiz</strong><small>Brand-new questions</small></a>

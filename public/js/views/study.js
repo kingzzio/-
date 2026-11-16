@@ -3,6 +3,8 @@ import { state, save, addXp, recordAnswer, reviewCard, cardDue, todayKey } from 
 import { esc, toast, confetti, celebrateBadges, share, baseUrl, aiAvailable, aiQuiz } from "../ui.js";
 import { getTopic, getExam, buildQuiz, dailyQuiz, cardId, topics, exams, examTopicIds, subjects } from "../content.js";
 import { aiCheat, openCheat } from "./cheats.js";
+import { speak } from "../fx.js";
+import { openReport } from "../appconfig.js";
 import { cheatcodes } from "../data/cheatcodes.js";
 
 // Plays the hand-made Cheat Code for this exact question if there is one, otherwise asks the AI (Premium).
@@ -29,7 +31,7 @@ export function reviewRoute(root) {
   runDeck(root, deck.slice(0, 40), { title: "Review due cards", back: "#/" });
 }
 
-function runDeck(root, cards, { title, back, dueOnly }) {
+export function runDeck(root, cards, { title, back, dueOnly }) {
   let deck = dueOnly ? cards.filter((c) => cardDue(c.id)) : [...cards];
   if (!deck.length) deck = [...cards];
   let i = 0, flipped = false, knew = 0, reviewed = 0;
@@ -127,10 +129,13 @@ export function runQuiz(root, questions, opts) {
         ${topic && opts.showTopic ? `<span class="eyebrow">${esc(topic.name)}</span>` : ""}
         <p class="q-text">${esc(q.q).replace(/\n/g, "<br>")}</p>
         <div class="choices">${q.choices.map((c, k) => `<button class="choice" data-k="${k}"><span class="letter">${"ABCD"[k] || k + 1}</span><span>${esc(c)}</span></button>`).join("")}</div>
+        <div class="q-tools">${state.settings.readAloud ? `<button class="link small" id="say">🔊 Read aloud</button>` : ""}<button class="link small muted" id="rep">🚩 Report</button></div>
         <div id="feedback"></div>
       </div>
       ${mode === "test" ? `<div class="btn-row"><button class="btn ghost" id="skip">Skip</button><button class="btn" id="next" disabled>Next →</button></div>` : ""}`;
     root.querySelectorAll(".choice").forEach((b) => (b.onclick = () => choose(Number(b.dataset.k))));
+    root.querySelector("#say")?.addEventListener("click", () => speak(`${q.q}. ${q.choices.map((c, k) => `${"ABCD"[k]}: ${c}`).join(". ")}`));
+    root.querySelector("#rep").onclick = () => openReport({ kind: "question", context: `${q.q} | ${q.choices.join(" / ")} | key: ${q.choices[q.a]}` });
     if (mode === "test") {
       root.querySelector("#skip").onclick = () => {
         answers.push({ q, picked: null, ok: false });
@@ -483,6 +488,23 @@ export function mistakesRoute(root) {
   if (!list.length) {
     root.innerHTML = `<a class="back" href="#/me">← Me</a><div class="empty"><div class="big-emoji">🌟</div><h2>No mistakes yet</h2><p>Questions you miss show up here so you can redo them.</p></div>`;
     return;
+  }
+  // Mistake fixer: show which topics you miss most, then redo or practice them.
+  if (!mistakesRoute.started) {
+    const counts = {};
+    for (const m of state.mistakes) if (m.topicId) counts[m.topicId] = (counts[m.topicId] || 0) + 1;
+    const top = Object.entries(counts).sort((x, y) => y[1] - x[1]).slice(0, 3).map(([id, n]) => ({ t: getTopic(id), n })).filter((x) => x.t);
+    root.innerHTML = `<a class="back" href="#/me">← Me</a><h1 class="page-title">🔧 Mistake fixer</h1>
+      <p class="lead">You have ${state.mistakes.length} question${state.mistakes.length === 1 ? "" : "s"} to fix.${top.length ? " These topics trip you up most:" : ""}</p>
+      ${top.length ? `<div class="list">${top.map(({ t, n }) => `<div class="row"><span class="grow"><strong>${esc(t.name)}</strong><small>${n} missed</small></span><span class="btns"><a class="btn small" href="#/lesson/${t.id}">Lesson</a><a class="btn small ghost" href="#/${t.gen?.length ? "practice" : "quiz"}/${t.id}">Practice</a></span></div>`).join("")}</div>` : ""}
+      <button class="btn big" id="redo" style="width:100%;margin-top:14px">Redo my mistakes (${list.length})</button>`;
+    root.querySelector("#redo").onclick = () => {
+      mistakesRoute.started = true;
+      const c = mistakesRoute(root);
+      mistakesRoute.started = false;
+      mistakesRoute.cleanup = c;
+    };
+    return () => mistakesRoute.cleanup?.();
   }
   return runQuiz(root, list, {
     title: "Mistake redo",

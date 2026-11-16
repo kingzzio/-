@@ -24,6 +24,10 @@ export default function learn(root) {
       </section>
 
       <div class="list">
+        <a class="row" href="#/path"><span class="tile-ic" style="--accent:#16a34a">🗺️</span><span class="grow"><strong>Learning path</strong><small>Every course as a map: earn a ⭐ at each stop</small></span><span class="chev">${icon("chevron")}</span></a>
+        <a class="row" href="#/plan"><span class="tile-ic" style="--accent:#0891b2">🗓️</span><span class="grow"><strong>Study plan</strong><small>A day-by-day plan to your test date</small></span><span class="chev">${icon("chevron")}</span></a>
+        <a class="row" href="#/decks"><span class="tile-ic" style="--accent:#7c3aed">🗂️</span><span class="grow"><strong>My decks</strong><small>Make flashcards, or turn notes into cards with AI</small></span><span class="chev">${icon("chevron")}</span></a>
+        <a class="row" href="#/formulas"><span class="tile-ic" style="--accent:#ea580c">🧮</span><span class="grow"><strong>Formula sheets</strong><small>Math, physics &amp; chemistry formulas</small></span><span class="chev">${icon("chevron")}</span></a>
         <a class="row" href="#/scholarships"><span class="tile-ic" style="--accent:#0ea5e9">🎓</span><span class="grow"><strong>Scholarship Hunt</strong><small>HSPT, ISEE, SSAT, Hunter: NY school exam dates + full practice tests</small></span><span class="chev">${icon("chevron")}</span></a>
         <a class="row" href="#/live"><span class="tile-ic" style="--accent:#7c3aed">${icon("users")}</span><span class="grow"><strong>BrainBoro Live</strong><small>Class game: join with a PIN, fastest right answers win</small></span><span class="chev">${icon("chevron")}</span></a>
         <a class="row" href="#/boroscore"><span class="tile-ic" style="--accent:#12a150">${icon("gauge")}</span><span class="grow"><strong>BoroScore</strong><small>Get a skill to 100. Past 90 is the Challenge Zone</small></span><span class="chev">${icon("chevron")}</span></a>

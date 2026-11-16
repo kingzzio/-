@@ -6,6 +6,7 @@ import history from "./data/history.js";
 import { exams, extraTopics } from "./data/exams.js";
 import { curricula, schoolTypes } from "./data/curricula.js";
 import { generateSet, makeRng } from "./generators.js";
+import { appConfig } from "./appconfig.js";
 
 export { exams, curricula, schoolTypes };
 
@@ -96,6 +97,9 @@ export function buildQuiz(topicIds, n, seed = Date.now(), { generatedOnly = fals
 
 /** Today's Daily Brain Blast: the same 5 questions for everyone today. */
 export function dailyQuiz(dateKey, examId) {
+  // The admin can hand-write a day's 5 questions; everyone gets those instead.
+  const custom = appConfig().daily?.[dateKey];
+  if (custom?.length === 5) return custom.map((q) => ({ ...q, topicId: "" }));
   const exam = examId && getExam(examId);
   const ids = exam ? examTopicIds(exam) : topics.map((t) => t.id);
   return buildQuiz(ids, 5, `daily-${dateKey}-${examId || "all"}`);

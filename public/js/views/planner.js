@@ -84,7 +84,9 @@ export default function planner(root, _p, query) {
     root.querySelectorAll("[data-check]").forEach((b) => (b.onclick = (e) => (e.stopPropagation(), toggleDone(b.dataset.check))));
     root.querySelectorAll("[data-open]").forEach((b) => {
       b.onclick = () => detail(b.dataset.open);
-      b.onkeydown = (e) => e.key === "Enter" && e.target === b && detail(b.dataset.open);
+      b.onkeydown = (e) => {
+        if (e.key === "Enter" && e.target === b) detail(b.dataset.open);
+      };
     });
   };
 

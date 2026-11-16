@@ -29,7 +29,14 @@ SHSAT · TACHS · Regents (Algebra I, Geometry, Algebra II, ELA, Biology, Earth 
 | 📂 **Free Resources** | Past Regents exams, the NYC SHSAT practice portal, Bluebook, Eureka Math PDFs and more (linked to the official sources). |
 | 🤖 **Boro AI tutor** | Hint / Explain / Quiz-me chat with homework photos. |
 | 👑 **Premium** | Unlimited Solve, every Cheat Code, Scan & Break into steps, and a 5× AI allowance. Sold with codes you create in the admin dashboard. |
-| 🛡️ **Admin dashboard** | User list and search, grant/remove Premium, disable accounts, generate Premium codes, stats. |
+| 🛡️ **Admin dashboard** | **Dashboard** (active today, online now, sign-ups, answers, busiest hours, most-used features, boroughs, top schools, AI meter, most-missed questions) · **Broadcast** (announcement banner, push notifications, feature on/off switches) · **Events** (Double XP, challenges with leaderboards, event cards, Daily Brain Blast editor, Borough Wars seasons + trophy wall) · **Growth** (one-time / promo / school-partner codes, referral rewards) · **Safety** (report queue, nickname filter, action log) · **Users**. Stats are anonymous counts; admins can't read students' chats, photos or essays. |
+| 🦉 **Boro pet & coins** | A pet that grows as you level up, coins from XP and quests, a shop (outfits, app colors, streak freezes), daily quests with a treasure chest, level-up celebrations, sounds and haptics. |
+| 🐉 **Boss battles & focus** | Beat a topic's boss with right answers; a Pomodoro focus timer with calm background sound. |
+| 📚 **Learn more** | Learning path per course, AI 2-minute lessons, a study plan to your test date (adds to the planner), formula sheets, word of the day, mistake fixer. |
+| 🗂️ **My decks** | Make flashcard decks, turn notes (typed or a photo) into cards with AI, share a deck with a link. |
+| 📈 **Stats & Wrapped** | Charts, a 12-week heatmap, strongest/weakest topics, a shareable monthly Wrapped card, a badges gallery and a printable progress report. |
+| 🤝 **Social** | Invite friends (both get Premium days), study squads with a team streak, admin challenges with leaderboards. |
+| ⚙️ **Settings** | Sounds, vibration, text size, easier-to-read text, reduce motion, theme, read-aloud, push notifications, backup/restore. Talk to Boro with your voice. |
 
 ## Is it an app? (free)
 

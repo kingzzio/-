@@ -1,4 +1,5 @@
 // Sign up / log in: Google or email + password, or keep going as a guest.
+import { state } from "../store.js";
 import { esc, post, toast } from "../ui.js";
 import { icon } from "../icons.js";
 import { initAccount, hasGoogle, renderGoogleButton, finishLogin } from "../account.js";
@@ -41,7 +42,7 @@ export function loginView(root, _p, query = {}, opts = {}) {
       btn.disabled = true;
       root.querySelector("#err").textContent = "";
       try {
-        const data = await (await post("api/auth", { action: mode, email: form.get("email"), password: form.get("password"), name: form.get("name") })).json();
+        const data = await (await post("api/auth", { action: mode, email: form.get("email"), password: form.get("password"), name: form.get("name"), ref: state.pendingRef || undefined })).json();
         await finishLogin(data);
         onDone(data.user);
       } catch (err) {

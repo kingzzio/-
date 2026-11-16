@@ -5,6 +5,12 @@ import { exams, getExam, getTopic, examTopicIds, subjects, topics } from "../con
 import { user } from "../account.js";
 import { installCard, wireInstall } from "../install.js";
 import { testDay } from "./scholarships.js";
+import { petCard } from "./fun.js";
+import { wordCard, wireWordCard } from "./learnmore.js";
+import { challengeCard, eventCard } from "./social.js";
+import { quests, questsDone, claimChest } from "../quests.js";
+import { flagOn } from "../appconfig.js";
+import { sfx } from "../fx.js";
 
 const BORO_COLORS = { Manhattan: "#6d4aff", Brooklyn: "#ff4f8b", Queens: "#12a150", "The Bronx": "#ff8a00", "Staten Island": "#0ea5e9" };
 
@@ -53,9 +59,14 @@ export default function home(root) {
   ${(() => {
     const td = testDay();
     return td
-      ? `<a class="card banner testday" href="#/fulltest/${td.exam}"><span class="big-num">${td.days}</span><span class="grow"><strong>${td.days === 0 ? "Test day is TODAY 💪" : `day${td.days === 1 ? "" : "s"} until ${esc(td.name)}`}</strong><small>Tap for a timed practice test</small></span><span class="chev">${icon("chevron")}</span></a>`
+      ? `<a class="card banner testday" href="#/${getExam(td.exam)?.fullTest ? "fulltest" : "test"}/${td.exam}"><span class="big-num">${td.days}</span><span class="grow"><strong>${td.days === 0 ? "Test day is TODAY 💪" : `day${td.days === 1 ? "" : "s"} until ${esc(td.name)}`}</strong><small>Tap for a timed practice test</small></span><span class="chev">${icon("chevron")}</span></a>`
       : `<a class="card banner" href="#/scholarships"><span class="tile-ic" style="--accent:#0ea5e9">🎓</span><span class="grow"><strong>Scholarship Hunt</strong><small>NY scholarship &amp; entrance exams: dates, countdowns, practice</small></span><span class="chev">${icon("chevron")}</span></a>`;
   })()}
+
+  ${eventCard()}
+  ${flagOn("challenge") ? challengeCard() : ""}
+  ${petCard()}
+  ${questsCard()}
 
   <a class="card daily ${daily ? "done" : ""}" href="#/daily">
     <div class="daily-emoji">${daily ? "✅" : "⚡"}</div>
@@ -72,6 +83,14 @@ export default function home(root) {
     <a href="#/cheats" style="--accent:#172043"><span class="q-ic">${icon("game", 26)}</span><span>Cheat Codes</span></a>
     <a href="#/battle" style="--accent:#ff4f8b"><span class="q-ic">${icon("sword", 26)}</span><span>Battle</span></a>
   </nav>
+  <nav class="quick quick-2" aria-label="More">
+    <a href="#/focus" style="--accent:#0f766e"><span class="q-ic">🎧</span><span>Focus</span></a>
+    <a href="#/decks" style="--accent:#7c3aed"><span class="q-ic">🗂️</span><span>My Decks</span></a>
+    <a href="#/squads" style="--accent:#f59e0b"><span class="q-ic">🤝</span><span>Squads</span></a>
+    <a href="#/stats" style="--accent:#2563eb"><span class="q-ic">📈</span><span>Stats</span></a>
+  </nav>
+
+  ${wordCard()}
 
   ${due ? `<a class="card banner" href="#/review"><span class="tile-ic" style="--accent:#12a150">🃏</span><span class="grow"><strong>${due} flashcard${due === 1 ? "" : "s"} ready to review</strong><small>Spaced repetition: review right before you'd forget</small></span><span class="chev">${icon("chevron")}</span></a>` : ""}
 
@@ -103,6 +122,15 @@ export default function home(root) {
   ${isPremium() ? "" : `<a class="card banner premium-banner" href="#/premium"><span class="tile-ic" style="--accent:#ffb648">${icon("crown")}</span><span class="grow"><strong>Go Premium</strong><small>Unlimited Snap & Answer, every Cheat Code, 5× more Boro</small></span><span class="chev">${icon("chevron")}</span></a>`}`;
 
   wireInstall(root);
+  wireWordCard(root);
+  root.querySelector("#chest")?.addEventListener("click", () => {
+    const coins = claimChest();
+    if (coins) {
+      sfx.coin();
+      root.querySelector("#quests").outerHTML = questsCard();
+      toastChest(coins);
+    }
+  });
   // Borough Wars standings load in the background.
   fetch("api/leaderboard", { cache: "no-store" })
     .then((r) => (r.ok ? r.json() : null))
@@ -116,6 +144,17 @@ export default function home(root) {
 }
 
 export { BORO_COLORS };
+
+function questsCard() {
+  const list = quests();
+  const done = questsDone();
+  return `<div class="card quests" id="quests"><div class="section-head" style="margin:0 0 8px"><h3 style="margin:0">🎯 Daily quests</h3><span class="small muted">${list.filter((q) => q.n >= q.goal).length}/3</span></div>
+    ${list.map((q) => `<div class="quest ${q.n >= q.goal ? "done" : ""}"><span class="q-check">${q.n >= q.goal ? "✅" : "⬜"}</span><span class="grow">${esc(q.label)}<div class="bar thin"><div class="bar-fill" style="width:${Math.min(100, (q.n / q.goal) * 100)}%"></div></div></span><small>${Math.min(q.n, q.goal)}/${q.goal}</small></div>`).join("")}
+    ${state.quests.claimed ? `<p class="small muted center" style="margin:8px 0 0">Chest opened today. New quests tomorrow!</p>` : `<button class="btn ${done ? "" : "ghost"} chest-btn" id="chest" ${done ? "" : "disabled"}>${done ? "🎁 Open treasure chest!" : "🔒 Finish all 3 to open the chest"}</button>`}</div>`;
+}
+function toastChest(coins) {
+  import("../ui.js").then(({ toast }) => toast(`Treasure chest: +${coins} coins, +30 XP!`, { emoji: "🎁", ms: 3500 }));
+}
 
 export function topicRow(t) {
   const m = mastery(t.id);
