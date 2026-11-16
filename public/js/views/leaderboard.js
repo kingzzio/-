@@ -3,9 +3,10 @@ import { esc } from "../ui.js";
 import { user, syncNow } from "../account.js";
 import { BORO_COLORS } from "./home.js";
 import { BOROUGHS, loginCard } from "./auth.js";
+import { appConfig } from "../appconfig.js";
 
 export default function leaderboard(root) {
-  root.innerHTML = `<h1 class="page-title">🏆 Borough Wars</h1><p class="lead">Every XP you earn this week counts for your borough. Resets every Monday.</p><div id="lb"><div class="empty"><div class="spinner"></div></div></div>`;
+  root.innerHTML = `<h1 class="page-title">🏆 Borough Wars</h1><p class="lead">Every XP you earn this week counts for your borough. Resets every Monday.</p><div id="lb"><div class="empty"><div class="spinner"></div></div></div>${(appConfig().trophies || []).length ? `<section class="section"><div class="section-head"><h2>🏆 Trophy wall</h2><span class="small muted">Season ${appConfig().season}</span></div><div class="row-scroll">${appConfig().trophies.map((t) => `<div class="card trophy"><div class="big-emoji">🏆</div><strong>${esc(t.borough)}</strong><small>Season ${t.season}</small>${t.top?.length ? `<small class="muted">MVPs: ${t.top.map(esc).join(", ")}</small>` : ""}</div>`).join("")}</div></section>` : ""}`;
   const draw = (lb) => {
     const u = user();
     const box = root.querySelector("#lb");

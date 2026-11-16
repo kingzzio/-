@@ -41,5 +41,7 @@ async function install() {
   document.body.appendChild(wrap);
   const close = () => wrap.remove();
   wrap.querySelector("#ok").onclick = close;
-  wrap.onclick = (e) => e.target === wrap && close();
+  wrap.onclick = (e) => {
+    if (e.target === wrap) close();
+  };
 }

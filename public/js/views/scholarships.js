@@ -34,7 +34,7 @@ export default function scholarships(root, _p, query) {
     <a class="back" href="#/exams">${icon("back", 18)} Tests</a>
     <h1 class="page-title">🎓 Scholarship Hunt</h1>
     <p class="lead">New York high schools that give scholarship or entrance exams. Pick yours, add it to your planner, and practice the exact format.</p>
-    ${td ? `<div class="card banner testday"><span class="big-num">${td.days}</span><span class="grow"><strong>${td.days === 0 ? "Test day is TODAY. You've got this! 💪" : `day${td.days === 1 ? "" : "s"} until ${esc(td.name)}`}</strong><small>${nice(td.date)} · ${esc(getExam(td.exam)?.name || "")} format</small></span><a class="btn small" href="#/fulltest/${td.exam}">Practice</a></div>` : ""}
+    ${td ? `<div class="card banner testday"><span class="big-num">${td.days}</span><span class="grow"><strong>${td.days === 0 ? "Test day is TODAY. You've got this! 💪" : `day${td.days === 1 ? "" : "s"} until ${esc(td.name)}`}</strong><small>${nice(td.date)} · ${esc(getExam(td.exam)?.name || "")} format</small></span><a class="btn small" href="#/${getExam(td.exam)?.fullTest ? "fulltest" : "test"}/${td.exam}">Practice</a></div>` : ""}
     <div class="chip-row"><a class="chip ${filter === "all" ? "on" : ""}" href="#/scholarships">All</a><a class="chip ${filter === "hspt" ? "on" : ""}" href="#/scholarships?f=hspt">HSPT</a><a class="chip ${filter === "own" ? "on" : ""}" href="#/scholarships?f=own">Own exam</a>${areas.map((a) => `<a class="chip ${filter === a ? "on" : ""}" href="#/scholarships?f=${encodeURIComponent(a)}">${esc(a)}</a>`).join("")}</div>
     <div class="list" style="margin-top:12px">${list
       .map((s, i) => {

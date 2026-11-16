@@ -2,6 +2,8 @@
 import { state, save, addXp } from "../store.js";
 import { esc, md, toast, aiAvailable, streamTutor, readImage, celebrateBadges } from "../ui.js";
 import { getTopic, getExam } from "../content.js";
+import { speak } from "../fx.js";
+import { openReport } from "../appconfig.js";
 
 const MODES = [
   ["hint", "💡 Hint", "Nudges, not answers"],
@@ -34,6 +36,7 @@ export default function tutor(root, _p, query) {
       <div class="boro">🤖</div>
       <div class="grow"><h1>Boro</h1><p class="small muted">Your AI study coach${exam ? ` • ${esc(exam.name)}` : ""}${topic ? ` • ${esc(topic.name)}` : ""}</p></div>
       <a class="btn ghost small" href="#/coach" title="Share your screen with Boro">👀 Screen Coach</a>
+      <button class="btn ghost small" id="talk" title="Boro reads replies out loud">${state.settings.talk ? "🔊" : "🔈"}</button>
       <button class="btn ghost small" id="clear" title="New chat">🧹</button>
     </div>
     <div class="modes" role="radiogroup" aria-label="Tutor mode">${MODES.map(([id, label, sub]) => `<button class="mode ${mode === id ? "on" : ""}" data-mode="${id}" role="radio" aria-checked="${mode === id}"><strong>${label}</strong><small>${sub}</small></button>`).join("")}</div>
@@ -43,6 +46,7 @@ export default function tutor(root, _p, query) {
       <div id="preview"></div>
       <div class="composer-row">
         <label class="icon-btn" title="Add a photo of your homework"><input type="file" accept="image/*" id="file" hidden>📷</label>
+        ${window.SpeechRecognition || window.webkitSpeechRecognition ? `<button type="button" class="icon-btn" id="mic" title="Talk to Boro">🎤</button>` : ""}
         <textarea id="msg" rows="1" maxlength="4000" placeholder="Ask anything… or snap your homework 📷"></textarea>
         <button class="send" id="send" aria-label="Send">➤</button>
       </div>
@@ -50,6 +54,29 @@ export default function tutor(root, _p, query) {
     </form>`;
 
   const log = root.querySelector("#log");
+  root.querySelector("#talk").onclick = (e) => {
+    state.settings.talk = !state.settings.talk;
+    save();
+    e.currentTarget.textContent = state.settings.talk ? "🔊" : "🔈";
+    if (state.settings.talk) speak("Okay! I'll read my answers out loud.");
+    else speechSynthesis?.cancel();
+  };
+  // Voice input: tap the mic, talk, and your words land in the box.
+  root.querySelector("#mic")?.addEventListener("click", (e) => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new SR();
+    rec.lang = "en-US";
+    rec.interimResults = true;
+    const btn = e.currentTarget;
+    btn.classList.add("listening");
+    rec.onresult = (ev) => (root.querySelector("#msg").value = [...ev.results].map((r) => r[0].transcript).join(" "));
+    rec.onend = () => {
+      btn.classList.remove("listening");
+      if (root.querySelector("#msg").value.trim()) root.querySelector("#send").click();
+    };
+    rec.onerror = () => btn.classList.remove("listening");
+    rec.start();
+  });
   const msg = root.querySelector("#msg");
   const sendBtn = root.querySelector("#send");
 
@@ -61,8 +88,10 @@ export default function tutor(root, _p, query) {
       return;
     }
     log.innerHTML = chat
-      .map((m) => `<div class="bubble ${m.role}">${m.image ? `<img src="${m.image.preview}" alt="Homework photo">` : ""}${m.role === "assistant" ? md(m.text || "…") : `<p>${esc(m.text).replace(/\n/g, "<br>")}</p>`}</div>`)
+      .map((m, i) => `<div class="bubble ${m.role}">${m.image ? `<img src="${m.image.preview}" alt="Homework photo">` : ""}${m.role === "assistant" ? md(m.text || "…") : `<p>${esc(m.text).replace(/\n/g, "<br>")}</p>`}${m.role === "assistant" && m.text ? `<span class="bubble-tools"><button class="link tiny" data-say="${i}">🔊</button><button class="link tiny" data-rep="${i}">🚩</button></span>` : ""}</div>`)
       .join("");
+    log.querySelectorAll("[data-say]").forEach((b) => (b.onclick = () => speak(chat[Number(b.dataset.say)].text)));
+    log.querySelectorAll("[data-rep]").forEach((b) => (b.onclick = () => openReport({ kind: "ai", context: chat[Number(b.dataset.rep)].text.slice(0, 500) })));
     log.scrollTop = log.scrollHeight;
     window.scrollTo(0, document.body.scrollHeight);
   };
@@ -105,6 +134,7 @@ export default function tutor(root, _p, query) {
       state.stats.aiChats++;
       celebrateBadges(addXp(3));
       save();
+      if (state.settings.talk) speak(reply.text);
     } catch (err) {
       reply.text = `⚠️ ${err.message}`;
       if (err.name !== "AbortError") toast(err.message, { emoji: "⚠️" });

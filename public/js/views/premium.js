@@ -59,6 +59,8 @@ export default function premium(root, _p, query) {
     }
   };
   root.querySelector("#go").onclick = redeem;
-  root.querySelector("#code").onkeydown = (e) => e.key === "Enter" && redeem();
+  root.querySelector("#code").onkeydown = (e) => {
+    if (e.key === "Enter") redeem();
+  };
   if (query.code && !active) redeem();
 }

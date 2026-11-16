@@ -2,7 +2,7 @@
 import { state, save, onChange } from "./store.js";
 import { post, toast, resetServerStatus } from "./ui.js";
 
-const SYNC_KEYS = ["profile", "xp", "streak", "goal", "cards", "topics", "mistakes", "badges", "tests", "daily", "stats", "planner", "blitz", "answers", "essay"];
+const SYNC_KEYS = ["profile", "xp", "streak", "goal", "cards", "topics", "mistakes", "badges", "tests", "daily", "stats", "planner", "blitz", "answers", "essay", "coins", "freezes", "owned", "pet", "history", "decks", "settings", "squad"];
 let googleClientId = "";
 let syncTimer = null;
 let ready = null;
@@ -35,6 +35,7 @@ export function initAccount() {
       googleClientId = data.googleClientId || "";
       if (data.user) {
         state.account = { user: data.user };
+        state.invite = data.invite || null;
         adopt(data.progress);
         state.profile.onboarded = true;
         if (data.user.name && !state.profile.name) state.profile.name = data.user.name;
@@ -128,7 +129,7 @@ export async function renderGoogleButton(el, onDone) {
     client_id: googleClientId,
     callback: async ({ credential }) => {
       try {
-        onDone(await (await post("api/auth", { action: "google", credential })).json());
+        onDone(await (await post("api/auth", { action: "google", credential, ref: state.pendingRef || undefined })).json());
       } catch (err) {
         toast(err.message, { emoji: "⚠️" });
       }

@@ -54,6 +54,8 @@ export function examPage(root, { id }) {
       <div class="btn-row wrap">
         ${e.fullTest ? `<a class="btn" href="#/fulltest/${e.id}">📝 Full-length practice test</a><a class="btn ghost" href="#/test/${e.id}">⏱️ Quick test (${e.mock.questions} Qs)</a>` : `<a class="btn" href="#/test/${e.id}">⏱️ Timed practice test (${e.mock.questions} Qs, ${e.mock.minutes} min)</a>`}
         ${state.profile.exam === e.id ? `<span class="tag">⭐ Your test</span>` : `<button class="btn ghost" id="set">⭐ Make this my test</button>`}
+        <button class="btn ghost" id="date">📅 ${state.testDay?.exam === e.id ? `Test day: ${esc(state.testDay.date)}` : "Set my test date"}</button>
+        <a class="btn ghost" href="#/plan">🗓️ Study plan</a>
       </div>
       ${best ? `<p class="small">Best practice score: <strong>${best.pct}%</strong> (${best.correct}/${best.total})</p>` : ""}
     </section>
@@ -77,6 +79,14 @@ export function examPage(root, { id }) {
     ${resourcesFor({ exam: e.id }).length ? `<section class="section"><div class="section-head"><h2>📂 Free official practice</h2><a class="link" href="#/resources?exam=${e.id}">All →</a></div><div class="list">${resourcesFor({ exam: e.id }).map(resourceCard).join("")}</div></section>` : ""}
     ${e.schools ? `<section class="section"><div class="section-head"><h2>🏫 Schools</h2></div><ul class="bullets">${e.schools.map((f) => `<li>${esc(f)}</li>`).join("")}</ul></section>` : ""}
     <p class="small muted">Formats and dates change — always confirm with the official source: <a href="${e.official.url}" target="_blank" rel="noopener">${esc(e.official.label)} ↗</a></p>`;
+  root.querySelector("#date").onclick = () => {
+    const d = prompt("When is your test? (YYYY-MM-DD)", state.testDay?.exam === e.id ? state.testDay.date : "");
+    if (!d) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || isNaN(new Date(d))) return alert("Use the format YYYY-MM-DD, like 2027-01-27.");
+    state.testDay = { name: `the ${e.name}`, date: d, exam: e.id };
+    save();
+    examPage(root, { id });
+  };
   root.querySelector("#set")?.addEventListener("click", () => {
     state.profile.exam = e.id;
     save();

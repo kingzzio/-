@@ -1,7 +1,7 @@
 // Offline support + instant launches.
 // Versioned files (?v=…) are cache-first (they never change). The page itself is served from cache
 // immediately and refreshed in the background, so opening the app doesn't wait on the network.
-const CACHE = "brainboro-a8307eb4c1";
+const CACHE = "brainboro-b7f0c5d610";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -58,6 +58,27 @@ self.addEventListener("fetch", (e) => {
         })
         .catch(() => hit || c.match("index.html"));
       return hit || fresh;
+    }),
+  );
+});
+
+// Push notifications from the admin dashboard.
+self.addEventListener("push", (e) => {
+  let data = {};
+  try {
+    data = e.data ? e.data.json() : {};
+  } catch {
+    data = { body: e.data?.text() };
+  }
+  e.waitUntil(self.registration.showNotification(data.title || "BrainBoro", { body: data.body || "", icon: "icons/icon-192.png", badge: "icons/icon-192.png", data: { url: data.url || "./" } }));
+});
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = new URL(e.notification.data?.url || "./", self.registration.scope).href;
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => c.url.startsWith(self.registration.scope));
+      return open ? open.navigate(url).then((c) => c?.focus()) : self.clients.openWindow(url);
     }),
   );
 });
